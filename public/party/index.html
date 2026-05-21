@@ -66,9 +66,29 @@
         body.lights-out-mode {
             background-color: #000 !important;
         }
-
-        body.lights-out-mode::before {
-            display: none !important;
+        
+        /* Dim everything except the active room workspace */
+        body.lights-out-mode *:not(.room-workspace):not(.room-workspace *) {
+            opacity: 0.15;
+            transition: opacity var(--dur-fast) var(--ease-out);
+        }
+        
+        /* Keep the workspace fully visible */
+        body.lights-out-mode .room-workspace,
+        body.lights-out-mode .room-workspace * {
+            opacity: 1;
+        }
+        
+        body.lights-out-mode header {
+            opacity: 0.05;
+            pointer-events: none;
+            transform: translateY(-5px);
+        }
+        
+        body.lights-out-mode header:hover {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
         }
 
         /* Glassmorphism Background */
@@ -1047,7 +1067,19 @@
         // Session Setup
         let currentUserName = localStorage.getItem('movora_username');
         if (!currentUserName) {
-            currentUserName = 'Guest_' + Math.random().toString(36).substring(2, 6).toUpperCase();
+            const funnyPrefixes = [
+                'butter', 'bread', 'popcorn', 'jelly', 'cheese', 'chilli', 'garlic', 'honey',
+                'maple', 'cream', 'peanut', 'banana', 'coconut', 'potato', 'cookie', 'waffle',
+                'tomato', 'onion', 'pepper', 'ginger', 'lemon', 'berry', 'apple', 'grape'
+            ];
+            const funnySuffixes = [
+                'sauce', 'jam', 'butter', 'bean', 'ball', 'paste', 'dip', 'glaze',
+                'syrup', 'cheese', 'shake', 'toast', 'crunch', 'whip', 'cake', 'fry',
+                'soup', 'juice', 'tart', 'pie', 'cookie', 'bread', 'oil', 'salt'
+            ];
+            const randomPrefix = funnyPrefixes[Math.floor(Math.random() * funnyPrefixes.length)];
+            const randomSuffix = funnySuffixes[Math.floor(Math.random() * funnySuffixes.length)];
+            currentUserName = randomPrefix + randomSuffix;
         }
 
         // Initialize Supabase Client
