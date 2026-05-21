@@ -23,6 +23,19 @@
                 </div>
 
                 <div class="watch-stage__actions">
+                    <a
+                        :href="`/party/?room=${showId}_s${currentSeason}e${currentEpisode}&title=${encodeURIComponent((show?.name || '') + ' - S' + currentSeason + 'E' + currentEpisode)}`"
+                        class="watch-stage__party-btn"
+                        title="Watch Together with friends!"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="watch-stage__party-icon">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        <span class="button-text">Watch Together</span>
+                    </a>
                     <ShareScreen />
                 </div>
             </div>
@@ -796,6 +809,46 @@ export default defineComponent({
         @media (min-width: 768px) {
             padding: 0 var(--s-5);
         }
+    }
+
+    &__party-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 90, 31, 0.08);
+        border: 1px solid rgba(255, 90, 31, 0.25);
+        border-radius: var(--r-pill);
+        color: var(--ember);
+        padding: 0.5rem 1.1rem;
+        min-height: 38px;
+        font-family: var(--font-ui);
+        font-size: var(--fs-sm);
+        font-weight: 600;
+        text-decoration: none;
+        transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+
+        &:hover {
+            background: rgba(255, 90, 31, 0.16);
+            border-color: rgba(255, 90, 31, 0.45);
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 640px) {
+            width: 36px;
+            min-height: 36px;
+            padding: 0;
+            display: inline-grid;
+            place-items: center;
+
+            .button-text {
+                display: none;
+            }
+        }
+    }
+
+    &__party-icon {
+        width: 16px;
+        height: 16px;
     }
 }
 </style>

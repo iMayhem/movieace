@@ -45,6 +45,41 @@
                     </svg>
                 </router-link>
 
+                <!-- Watch Together Party Lobby Link -->
+                <a
+                    href="/party/"
+                    class="site-header__party-btn"
+                    aria-label="Watch Together"
+                    title="Watch Together Party Lobby"
+                >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="site-header__party-icon">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    <span class="site-header__party-label">Party</span>
+                </a>
+
+                <!-- User Session Controls -->
+                <div v-if="currentUser" class="site-header__user-badge">
+                    <span class="site-header__username">{{ currentUser }}</span>
+                    <button @click="handleLogout" class="site-header__logout-btn" title="Sign Out">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                            <polyline points="16 17 21 12 16 7" />
+                            <line x1="21" y1="12" x2="9" y2="12" />
+                        </svg>
+                    </button>
+                </div>
+                <button
+                    v-else
+                    @click="isAuthModalOpen = true"
+                    class="site-header__login-btn"
+                >
+                    Sign In
+                </button>
+
                 <button
                     class="site-header__icon-btn site-header__menu"
                     type="button"
@@ -76,8 +111,33 @@
                     <span class="eyebrow site-header__drawer-num">✦</span>
                     <span class="site-header__drawer-label">Search &amp; Jump</span>
                 </button>
+
+                <a href="/party/" class="site-header__drawer-link" @click="drawerOpen = false">
+                    <span class="eyebrow site-header__drawer-num">✦</span>
+                    <span class="site-header__drawer-label">Watch Together</span>
+                </a>
+
+                <div v-if="currentUser" class="site-header__drawer-link" style="justify-content: space-between;">
+                    <span class="site-header__drawer-label" style="color: var(--ember); font-weight: 600;">
+                        👤 {{ currentUser }}
+                    </span>
+                    <button @click="handleLogout(); drawerOpen = false" class="site-header__logout-btn" style="margin-left: auto;">
+                        Sign Out
+                    </button>
+                </div>
+                <button
+                    v-else
+                    @click="isAuthModalOpen = true; drawerOpen = false"
+                    class="site-header__drawer-link"
+                >
+                    <span class="eyebrow site-header__drawer-num">👤</span>
+                    <span class="site-header__drawer-label">Sign In / Up</span>
+                </button>
             </nav>
         </LmDrawer>
+
+        <!-- Authentication Modal Dialog -->
+        <AuthModal :is-open="isAuthModalOpen" @close="isAuthModalOpen = false" />
     </header>
 </template>
 
@@ -85,7 +145,9 @@
 import { defineComponent, onMounted, onBeforeUnmount, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import LmDrawer from '../primitives/Drawer.vue';
+import AuthModal from './AuthModal.vue';
 import { openPalette } from '../../composables/useCommandPalette';
+import { getCurrentUser, logoutUser } from '../../lib/auth';
 
 interface NavItem {
     label: string;
@@ -119,11 +181,22 @@ const primaryNav: NavItem[] = [
 
 export default defineComponent({
     name: 'SiteHeader',
-    components: { LmDrawer },
+    components: { LmDrawer, AuthModal },
     setup() {
         const route = useRoute();
         const scrolled = ref(false);
         const drawerOpen = ref(false);
+
+        const isAuthModalOpen = ref(false);
+        const currentUser = ref<string | null>(null);
+
+        const updateCurrentUser = () => {
+            currentUser.value = getCurrentUser();
+        };
+
+        const handleLogout = () => {
+            logoutUser();
+        };
 
         const isMac = typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(navigator.platform);
         const modKey = isMac ? '⌘' : 'Ctrl+';
@@ -142,10 +215,13 @@ export default defineComponent({
         onMounted(() => {
             onScroll();
             window.addEventListener('scroll', onScroll, { passive: true });
+            updateCurrentUser();
+            window.addEventListener('movora_auth_change', updateCurrentUser);
         });
 
         onBeforeUnmount(() => {
             window.removeEventListener('scroll', onScroll);
+            window.removeEventListener('movora_auth_change', updateCurrentUser);
         });
 
         return {
@@ -155,7 +231,10 @@ export default defineComponent({
             modKey,
             isActive,
             openPalette,
-            openFromDrawer
+            openFromDrawer,
+            isAuthModalOpen,
+            currentUser,
+            handleLogout
         };
     }
 });
@@ -427,6 +506,93 @@ export default defineComponent({
 
     &__drawer-search {
         color: var(--bone-50);
+    }
+
+    &__party-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        background: rgba(255, 90, 31, 0.08);
+        border: 1px solid rgba(255, 90, 31, 0.25);
+        border-radius: var(--r-sm);
+        color: var(--ember);
+        font-family: var(--font-ui);
+        font-size: var(--fs-xs);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: var(--ls-wide);
+        transition: background-color var(--dur-fast), border-color var(--dur-fast), transform var(--dur-fast);
+        text-decoration: none;
+
+        &:hover {
+            background: rgba(255, 90, 31, 0.16);
+            border-color: rgba(255, 90, 31, 0.45);
+            transform: translateY(-1px);
+        }
+    }
+
+    &__party-icon {
+        width: 14px;
+        height: 14px;
+    }
+
+    &__login-btn {
+        background: linear-gradient(135deg, var(--ember) 0%, #ff8a00 100%);
+        color: var(--ink-900);
+        font-weight: 700;
+        font-family: var(--font-ui);
+        font-size: var(--fs-xs);
+        padding: 6px var(--s-4);
+        border: none;
+        border-radius: var(--r-sm);
+        cursor: pointer;
+        transition: transform var(--dur-fast), box-shadow var(--dur-fast);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 90, 31, 0.25);
+        }
+    }
+
+    &__user-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--s-2);
+        padding: 5px var(--s-2) 5px var(--s-3);
+        background: var(--surface-tint);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-sm);
+    }
+
+    &__username {
+        color: var(--bone-100);
+        font-family: var(--font-ui);
+        font-size: var(--fs-xs);
+        font-weight: 600;
+    }
+
+    &__logout-btn {
+        background: transparent;
+        border: none;
+        color: var(--bone-400);
+        cursor: pointer;
+        padding: var(--s-1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--r-xs);
+        transition: color var(--dur-fast), background-color var(--dur-fast);
+
+        svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        &:hover {
+            color: var(--ember);
+            background: rgba(255, 90, 31, 0.08);
+        }
     }
 }
 </style>
