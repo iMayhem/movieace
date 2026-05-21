@@ -525,12 +525,6 @@
             color: var(--bone-200);
         }
 
-        .banner-progress-time {
-            font-family: var(--font-mono);
-            color: var(--violet);
-            font-weight: 600;
-        }
-
         .banner-sync-btn {
             background: transparent;
             border: none;
@@ -565,10 +559,6 @@
             height: 100%;
             border: none;
             background: #000;
-        }
-
-        .player-controls {
-            display: none; /* Auto embed handles controls inside iframe, but sync events are managed via Supabase Broadcast events */
         }
 
         /* Sidebar & Chat Panel */
@@ -850,7 +840,7 @@
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                                 Leave Lobby
                             </button>
-                            <h2 id="room-playing-title" class="workspace-title">Mortal Kombat</h2>
+                            <h2 id="room-playing-title" class="workspace-title">Feature Title</h2>
                         </div>
                         
                         <div class="stream-selectors">
@@ -868,11 +858,10 @@
                     <!-- Info Banner -->
                     <div class="workspace-banner">
                         <div class="banner-progress">
-                            <span>🎬 Room Progress:</span>
-                            <span id="progress-timer" class="banner-progress-time">00:00:00</span>
+                            <span id="banner-playing-text">🍿 Loading feature stream...</span>
                         </div>
-                        <button class="banner-sync-btn" onclick="showSyncInstructions()">
-                            Click here to see where to sync your player
+                        <button id="share-link-btn" class="banner-sync-btn" onclick="copyShareLink()">
+                            🔗 Invite Friends (Copy Link)
                         </button>
                     </div>
 
@@ -923,7 +912,7 @@
 
         // Parse query params (Direct Join or Stream details transfer)
         const urlParams = new URLSearchParams(window.location.search);
-        const joinRoomId = urlParams.get('room') || '';
+        let joinRoomId = urlParams.get('room') || '';
         const prefillTitle = urlParams.get('title') || '';
 
         // Parsing room parameter for custom player URLs
@@ -932,27 +921,35 @@
         let season = 1;
         let episode = 1;
 
-        if (joinRoomId.includes('_s')) {
-            isTv = true;
-            const parts = joinRoomId.split('_s');
-            mediaId = parts[0];
-            const epParts = parts[1].split('e');
-            season = parseInt(epParts[0]) || 1;
-            episode = parseInt(epParts[1]) || 1;
+        function parseMediaParams(idString) {
+            isTv = idString.includes('_s');
+            mediaId = idString;
+            season = 1;
+            episode = 1;
+
+            if (isTv) {
+                const parts = idString.split('_s');
+                mediaId = parts[0];
+                const epParts = parts[1].split('e');
+                season = parseInt(epParts[0]) || 1;
+                episode = parseInt(epParts[1]) || 1;
+            }
         }
 
         // Available Stream Servers
-        const streamUrls = {
-            vidplus: isTv 
+        let streamUrls = {};
+
+        function updateProviderUrls() {
+            streamUrls.vidplus = isTv 
                 ? `https://vidlink.pro/tv/${mediaId}/${season}/${episode}?primaryColor=6366f1`
-                : `https://vidlink.pro/movie/${mediaId}?primaryColor=6366f1`,
-            videasy: isTv
+                : `https://vidlink.pro/movie/${mediaId}?primaryColor=6366f1`;
+            streamUrls.videasy = isTv
                 ? `https://player.videasy.net/tv/${mediaId}/${season}/${episode}?color=6366f1`
-                : `https://player.videasy.net/movie/${mediaId}?color=6366f1`,
-            vidsrc: isTv
+                : `https://player.videasy.net/movie/${mediaId}?color=6366f1`;
+            streamUrls.vidsrc = isTv
                 ? `https://vidsrc.to/embed/tv/${mediaId}/${season}/${episode}`
-                : `https://vidsrc.to/embed/movie/${mediaId}`
-        };
+                : `https://vidsrc.to/embed/movie/${mediaId}`;
+        }
 
         let activeProvider = 'vidplus';
 
@@ -969,9 +966,6 @@
         let activeRoom = null;
         let channel = null;
         let isHost = false;
-        let presenceTracker = {};
-        let progressTimerInterval = null;
-        let startTime = Date.now();
 
         // Update Header user badge
         function updateHeaderBadge() {
@@ -1005,7 +999,6 @@
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById('lobby-view').classList.add('active');
             window.history.pushState({}, '', window.location.pathname);
-            stopProgressTimer();
             loadActiveRooms();
         }
 
@@ -1019,48 +1012,24 @@
             document.getElementById('room-view').classList.add('active');
             
             document.getElementById('room-playing-title').textContent = room.movie_title || room.name;
+            document.getElementById('banner-playing-text').textContent = `🍿 Watching: ${room.movie_title || 'Feature'}`;
             
-            // Build current stream provider source URL
             const iframe = document.getElementById('video-player-iframe');
             
-            // Setup prefill URL templates or direct embed mapping
-            if (room.embed_sources && !room.embed_sources.startsWith('http')) {
-                // If it's a raw movie ID or similar, use our templates
-                mediaId = room.embed_sources;
-                isTv = room.embed_sources.includes('_s');
-                if (isTv) {
-                    const parts = room.embed_sources.split('_s');
-                    mediaId = parts[0];
-                    const epParts = parts[1].split('e');
-                    season = parseInt(epParts[0]) || 1;
-                    episode = parseInt(epParts[1]) || 1;
-                }
-                updateProviderUrls();
-                iframe.src = streamUrls[activeProvider];
-            } else {
-                iframe.src = room.embed_sources || streamUrls[activeProvider];
-            }
+            // Resolve media params and URLs
+            parseMediaParams(room.embed_sources);
+            updateProviderUrls();
+            
+            iframe.src = streamUrls[activeProvider];
 
+            // Update URL to the shareable room UUID link
             window.history.pushState({}, '', `?room=${room.id}`);
             
-            // Connect to real-time sync channel
+            // Connect to real-time chat & presence channel
             connectToRealtimeRoom(room);
-            startProgressTimer();
         }
 
-        function updateProviderUrls() {
-            streamUrls.vidplus = isTv 
-                ? `https://vidlink.pro/tv/${mediaId}/${season}/${episode}?primaryColor=6366f1`
-                : `https://vidlink.pro/movie/${mediaId}?primaryColor=6366f1`;
-            streamUrls.videasy = isTv
-                ? `https://player.videasy.net/tv/${mediaId}/${season}/${episode}?color=6366f1`
-                : `https://player.videasy.net/movie/${mediaId}?color=6366f1`;
-            streamUrls.vidsrc = isTv
-                ? `https://vidsrc.to/embed/tv/${mediaId}/${season}/${episode}`
-                : `https://vidsrc.to/embed/movie/${mediaId}`;
-        }
-
-        // Switch stream server (VidPlus, VidEasy, VidSrc)
+        // Switch stream server locally
         function switchStreamProvider(providerId) {
             activeProvider = providerId;
             document.querySelectorAll('.stream-selector-btn').forEach(btn => btn.classList.remove('active'));
@@ -1068,14 +1037,6 @@
 
             const iframe = document.getElementById('video-player-iframe');
             iframe.src = streamUrls[providerId];
-
-            if (channel) {
-                channel.send({
-                    type: 'broadcast',
-                    event: 'server_change',
-                    payload: { provider: providerId }
-                });
-            }
         }
 
         // Lights Out toggler
@@ -1083,35 +1044,22 @@
             document.body.classList.toggle('lights-out-mode');
         }
 
-        // Show sync instructions alert matching CLICK HERE
-        function showSyncInstructions() {
-            alert(
-                "🎬 Playback Synchronization:\n\n" +
-                "To ensure everyone watches completely synchronously, simply play, pause, or seek the player.\n" +
-                "Your actions will instantly broadcast to all online lobby viewers. Enjoy your Watch Party!"
-            );
-        }
-
-        // Progress timer simulation
-        function startProgressTimer() {
-            startTime = Date.now();
-            const el = document.getElementById('progress-timer');
-            
-            stopProgressTimer();
-            progressTimerInterval = setInterval(() => {
-                const diff = Date.now() - startTime;
-                const hrs = String(Math.floor(diff / 3600000)).padStart(2, '0');
-                const mins = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
-                const secs = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
-                el.textContent = `${hrs}:${mins}:${secs}`;
-            }, 1000);
-        }
-
-        function stopProgressTimer() {
-            if (progressTimerInterval) {
-                clearInterval(progressTimerInterval);
-                progressTimerInterval = null;
-            }
+        // Copy shared link
+        function copyShareLink() {
+            if (!activeRoom) return;
+            const shareUrl = `${window.location.origin}${window.location.pathname}?room=${activeRoom.id}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                const btn = document.getElementById('share-link-btn');
+                const oldText = btn.innerHTML;
+                btn.innerHTML = '✨ Invite Link Copied!';
+                btn.style.color = '#10b981';
+                setTimeout(() => {
+                    btn.innerHTML = oldText;
+                    btn.style.color = '';
+                }, 2500);
+            }).catch(err => {
+                alert('Copy this URL to invite friends:\n' + shareUrl);
+            });
         }
 
         // Database Rooms queries
@@ -1203,7 +1151,7 @@
                 showRoomView(room);
 
             } catch (err) {
-                alert('Failed to launch party room: ' + err.message);
+                alert('Failed to launch party room: ' + createError.message);
             }
         }
 
@@ -1222,18 +1170,10 @@
                 }
             });
 
-            // Listen for system Broadcast events (sync play/pause/seek/server)
+            // Listen for system Broadcast events (Realtime Lobby Chat)
             channel
                 .on('broadcast', { event: 'chat' }, (payload) => {
                     appendChatMessage(payload.payload.user, payload.payload.message, 'other');
-                })
-                .on('broadcast', { event: 'server_change' }, (payload) => {
-                    activeProvider = payload.payload.provider;
-                    document.querySelectorAll('.stream-selector-btn').forEach(btn => btn.classList.remove('active'));
-                    document.getElementById(`stream-btn-${activeProvider}`).classList.add('active');
-                    const iframe = document.getElementById('video-player-iframe');
-                    iframe.src = streamUrls[activeProvider];
-                    appendChatMessage('System', `Stream provider switched to ${activeProvider.toUpperCase()}.`, 'system');
                 })
                 .on('presence', { event: 'sync' }, () => {
                     const state = channel.presenceState();
@@ -1305,20 +1245,54 @@
         }
 
         // Page Init logic
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             updateHeaderBadge();
 
             if (joinRoomId) {
-                // Instantly join a specific room or trigger quick setup if prefelled
-                if (prefillTitle) {
-                    showCreateView();
-                    document.getElementById('form-movie-title').value = prefillTitle;
-                    
-                    // Set inputs
-                    document.getElementById('form-embed-url').value = joinRoomId;
-                    document.getElementById('form-room-name').value = `${currentUserName}'s Watch Lounge`;
-                } else {
+                // Check if it is a UUID (UUID validation regex)
+                const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(joinRoomId);
+                
+                if (isUuid) {
                     joinExistingRoom(joinRoomId);
+                } else {
+                    // TMDb ID. Let's automatically check if a room already exists or create one!
+                    try {
+                        const { data: existingRooms, error } = await supabase
+                            .from('rooms')
+                            .select('*')
+                            .eq('embed_sources', joinRoomId)
+                            .order('created_at', { ascending: false });
+
+                        if (!error && existingRooms && existingRooms.length > 0) {
+                            const room = existingRooms[0];
+                            activeRoom = room;
+                            isHost = false;
+                            showRoomView(room);
+                        } else {
+                            // Create automatically
+                            const roomName = `${currentUserName}'s Watch Lounge`;
+                            const { data: newRoom, error: createError } = await supabase
+                                .from('rooms')
+                                .insert([{
+                                    name: roomName,
+                                    movie_title: prefillTitle || 'Feature Title',
+                                    embed_sources: joinRoomId,
+                                    scheduled_start_time: new Date().toISOString()
+                                }])
+                                .select()
+                                .single();
+
+                            if (createError) throw createError;
+
+                            activeRoom = newRoom;
+                            isHost = true;
+                            showRoomView(newRoom);
+                        }
+                    } catch (err) {
+                        console.error('Error auto-resolving watch party room:', err);
+                        alert('Could not auto-create watch room. Loading active lobbies.');
+                        showLobbyView();
+                    }
                 }
             } else {
                 loadActiveRooms();
