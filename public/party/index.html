@@ -67,28 +67,28 @@
             background-color: #000 !important;
         }
         
-        /* Dim everything except the active room workspace */
-        body.lights-out-mode *:not(.room-workspace):not(.room-workspace *) {
-            opacity: 0.15;
-            transition: opacity var(--dur-fast) var(--ease-out);
-        }
-        
-        /* Keep the workspace fully visible */
-        body.lights-out-mode .room-workspace,
-        body.lights-out-mode .room-workspace * {
-            opacity: 1;
-        }
-        
+        /* Dim the header in lights out mode */
         body.lights-out-mode header {
             opacity: 0.05;
             pointer-events: none;
             transform: translateY(-5px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
         }
         
         body.lights-out-mode header:hover {
             opacity: 1;
             pointer-events: auto;
             transform: translateY(0);
+        }
+        
+        /* Keep the workspace (player + chat) fully visible */
+        body.lights-out-mode .room-workspace,
+        body.lights-out-mode .room-workspace *,
+        body.lights-out-mode .player-container,
+        body.lights-out-mode .player-container *,
+        body.lights-out-mode .sidebar,
+        body.lights-out-mode .sidebar * {
+            opacity: 1 !important;
         }
 
         /* Glassmorphism Background */
