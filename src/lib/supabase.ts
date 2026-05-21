@@ -8,8 +8,15 @@ export function getSupabaseClient() {
         return createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_KEY);
     }
     
-    const url = localStorage.getItem('supabase_url') || DEFAULT_SUPABASE_URL;
-    const key = localStorage.getItem('supabase_key') || DEFAULT_SUPABASE_KEY;
+    let url = localStorage.getItem('supabase_url');
+    let key = localStorage.getItem('supabase_key');
+    
+    if (!url || url === 'undefined' || url === 'null' || url.trim() === '') {
+        url = DEFAULT_SUPABASE_URL;
+    }
+    if (!key || key === 'undefined' || key === 'null' || key.trim() === '') {
+        key = DEFAULT_SUPABASE_KEY;
+    }
     
     return createClient(url, key);
 }

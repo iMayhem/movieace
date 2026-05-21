@@ -960,7 +960,7 @@
         }
 
         // Initialize Supabase Client
-        const supabase = supabase.createClient(defaultUrl, defaultKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVleWlyYWd0eWxvdGl3b3piZ3FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNzAyNzYsImV4cCI6MjA5NDk0NjI3Nn0.YB_alc7kt5l09eTfNH0x5q-ayBx-dHS1qE-yzHbRTFg');
+        const supabaseClient = supabase.createClient(defaultUrl, defaultKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVleWlyYWd0eWxvdGl3b3piZ3FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNzAyNzYsImV4cCI6MjA5NDk0NjI3Nn0.YB_alc7kt5l09eTfNH0x5q-ayBx-dHS1qE-yzHbRTFg');
 
         // Application State variables
         let activeRoom = null;
@@ -1067,7 +1067,7 @@
             const container = document.getElementById('rooms-container');
             
             try {
-                const { data: rooms, error } = await supabase
+                const { data: rooms, error } = await supabaseClient
                     .from('rooms')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -1109,7 +1109,7 @@
 
         async function joinExistingRoom(roomId) {
             try {
-                const { data: room, error } = await supabase
+                const { data: room, error } = await supabaseClient
                     .from('rooms')
                     .select('*')
                     .eq('id', roomId)
@@ -1133,7 +1133,7 @@
             const embedUrl = document.getElementById('form-embed-url').value.trim();
 
             try {
-                const { data: room, error } = await supabase
+                const { data: room, error } = await supabaseClient
                     .from('rooms')
                     .insert([{
                         name: name,
@@ -1151,18 +1151,18 @@
                 showRoomView(room);
 
             } catch (err) {
-                alert('Failed to launch party room: ' + createError.message);
+                alert('Failed to launch party room: ' + err.message);
             }
         }
 
         // Realtime social communication via WebSockets
         function connectToRealtimeRoom(room) {
             if (channel) {
-                supabase.removeChannel(channel);
+                supabaseClient.removeChannel(channel);
             }
 
             // Chat & User presence channels
-            channel = supabase.channel(`party_room_${room.id}`, {
+            channel = supabaseClient.channel(`party_room_${room.id}`, {
                 config: {
                     presence: {
                         key: currentUserName
@@ -1257,7 +1257,7 @@
                 } else {
                     // TMDb ID. Let's automatically check if a room already exists or create one!
                     try {
-                        const { data: existingRooms, error } = await supabase
+                        const { data: existingRooms, error } = await supabaseClient
                             .from('rooms')
                             .select('*')
                             .eq('embed_sources', joinRoomId)
@@ -1271,7 +1271,7 @@
                         } else {
                             // Create automatically
                             const roomName = `${currentUserName}'s Watch Lounge`;
-                            const { data: newRoom, error: createError } = await supabase
+                            const { data: newRoom, error: createError } = await supabaseClient
                                 .from('rooms')
                                 .insert([{
                                     name: roomName,
