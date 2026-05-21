@@ -15,14 +15,14 @@
     <style>
         :root {
             --ink-950: #04060a;
-            --ink-900: #0b0a08;
-            --ink-800: #12110f;
-            --surface: rgba(18, 17, 15, 0.75);
+            --ink-900: #0a0a0c;
+            --ink-800: #121115;
+            --surface: rgba(10, 10, 12, 0.75);
             --surface-tint: rgba(255, 255, 255, 0.04);
             --surface-hover: rgba(255, 255, 255, 0.08);
             --ember: #ff5a1f;
-            --ember-hover: #ff7844;
-            --gold-leaf: #f0c38e;
+            --violet: #6366f1;
+            --violet-hover: #4f46e5;
             --bone-50: #fbfbfb;
             --bone-200: #e0deda;
             --bone-400: #999690;
@@ -39,7 +39,7 @@
             --dur-fast: 0.2s;
             --dur-base: 0.3s;
             --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-            --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5);
         }
 
         * {
@@ -56,6 +56,15 @@
             overflow-x: hidden;
             display: flex;
             flex-direction: column;
+            transition: background-color 0.5s ease;
+        }
+
+        body.lights-out-mode {
+            background-color: #000 !important;
+        }
+
+        body.lights-out-mode::before {
+            display: none !important;
         }
 
         /* Glassmorphism Background */
@@ -67,8 +76,8 @@
             width: 100%;
             height: 100%;
             background: 
-                radial-gradient(circle at 10% 20%, rgba(255, 90, 31, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 90% 80%, rgba(240, 195, 142, 0.05) 0%, transparent 40%);
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(255, 90, 31, 0.05) 0%, transparent 40%);
             z-index: -1;
             pointer-events: none;
         }
@@ -76,15 +85,28 @@
         /* Header Styling */
         header {
             border-bottom: 1px solid var(--rule);
-            background: rgba(11, 10, 8, 0.75);
+            background: rgba(10, 10, 12, 0.85);
             backdrop-filter: blur(16px);
             position: sticky;
             top: 0;
             z-index: 100;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        body.lights-out-mode header {
+            opacity: 0.05;
+            pointer-events: none;
+            transform: translateY(-5px);
+        }
+
+        body.lights-out-mode header:hover {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
         }
 
         .header-inner {
-            max-width: 1300px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 1.25rem 2rem;
             display: flex;
@@ -151,10 +173,10 @@
 
         /* Container Layout */
         main {
-            max-width: 1300px;
+            max-width: 1440px;
             width: 100%;
             margin: 0 auto;
-            padding: 2.5rem 2rem;
+            padding: 2rem;
             flex: 1;
             display: flex;
             flex-direction: column;
@@ -229,9 +251,9 @@
         }
 
         .room-card:hover {
-            border-color: rgba(255, 90, 31, 0.4);
+            border-color: rgba(99, 102, 241, 0.4);
             transform: translateY(-2px);
-            box-shadow: 0 15px 35px rgba(255, 90, 31, 0.1);
+            box-shadow: 0 15px 35px rgba(99, 102, 241, 0.1);
         }
 
         .room-header {
@@ -356,8 +378,9 @@
             display: grid;
             grid-template-columns: 1fr 380px;
             gap: 2rem;
-            height: calc(100vh - 180px);
+            height: calc(100vh - 120px);
             align-items: stretch;
+            transition: all 0.5s ease;
         }
 
         @media (max-width: 1024px) {
@@ -367,60 +390,188 @@
             }
         }
 
+        body.lights-out-mode .room-workspace {
+            grid-template-columns: 1fr;
+        }
+
+        body.lights-out-mode .sidebar {
+            display: none !important;
+        }
+
         .player-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Replicating screenshot title header */
+        .workspace-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .workspace-title-area {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .leave-lobby-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--bone-200);
+            padding: 0.5rem 1rem;
+            border-radius: var(--r-sm);
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all var(--dur-fast);
+        }
+
+        .leave-lobby-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.25);
+            color: var(--bone-50);
+        }
+
+        .workspace-title {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--bone-50);
+            letter-spacing: -0.02em;
+        }
+
+        /* Stream Selectors */
+        .stream-selectors {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: var(--font-ui);
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--bone-400);
+            letter-spacing: 0.05em;
+        }
+
+        .stream-selector-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--bone-200);
+            padding: 0.4rem 0.95rem;
+            border-radius: var(--r-pill);
+            font-weight: 700;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all var(--dur-fast);
+            text-transform: uppercase;
+        }
+
+        .stream-selector-btn.active {
+            background: var(--violet);
+            border-color: var(--violet);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+        }
+
+        .stream-selector-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .lights-out-btn {
+            background: transparent;
+            border: none;
+            color: var(--bone-200);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            transition: color var(--dur-fast);
+            padding: 0.4rem;
+        }
+
+        .lights-out-btn:hover {
+            color: #fff;
+        }
+
+        /* Room Progress Bar Banner */
+        .workspace-banner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: var(--r-md);
+            padding: 0.85rem 1.25rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            backdrop-filter: blur(12px);
+        }
+
+        .banner-progress {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--bone-200);
+        }
+
+        .banner-progress-time {
+            font-family: var(--font-mono);
+            color: var(--violet);
+            font-weight: 600;
+        }
+
+        .banner-sync-btn {
+            background: transparent;
+            border: none;
+            color: var(--violet);
+            font-weight: 700;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: color var(--dur-fast);
+        }
+
+        .banner-sync-btn:hover {
+            color: #818cf8;
+            text-decoration: underline;
+        }
+
+        /* Iframe stage */
+        .player-stage {
             background: #000;
             border: 1px solid var(--rule);
             border-radius: var(--r-md);
             overflow: hidden;
             position: relative;
-            display: flex;
-            flex-direction: column;
+            aspect-ratio: 16/9;
             box-shadow: var(--shadow-lg);
+            width: 100%;
         }
 
         .player-iframe {
             width: 100%;
-            flex: 1;
+            height: 100%;
             border: none;
             background: #000;
-            aspect-ratio: 16/9;
-        }
-
-        .player-header {
-            padding: 1rem 1.5rem;
-            background: rgba(18, 17, 15, 0.9);
-            border-bottom: 1px solid var(--rule);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
 
         .player-controls {
-            display: flex;
-            gap: 1rem;
-            padding: 1rem 1.5rem;
-            background: rgba(18, 17, 15, 0.9);
-            border-top: 1px solid var(--rule);
-            align-items: center;
+            display: none; /* Auto embed handles controls inside iframe, but sync events are managed via Supabase Broadcast events */
         }
 
-        .timeline-slider {
-            flex: 1;
-            height: 6px;
-            background: rgba(255,255,255,0.15);
-            border-radius: var(--r-pill);
-            position: relative;
-            cursor: pointer;
-        }
-
-        .timeline-progress {
-            width: 0%;
-            height: 100%;
-            background: var(--ember);
-            border-radius: var(--r-pill);
-        }
-
-        /* Sidebar Container */
+        /* Sidebar & Chat Panel */
         .sidebar {
             background: var(--surface);
             border: 1px solid var(--rule);
@@ -429,31 +580,43 @@
             flex-direction: column;
             overflow: hidden;
             backdrop-filter: blur(12px);
+            box-shadow: var(--shadow-lg);
         }
 
-        .sidebar-tabs {
-            display: flex;
+        .sidebar-header {
+            padding: 1.25rem;
             border-bottom: 1px solid var(--rule);
-            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.15);
         }
 
-        .tab-btn {
-            flex: 1;
-            padding: 1rem;
-            background: transparent;
-            border: none;
+        .chat-title-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--bone-50);
+        }
+
+        .chat-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+        }
+
+        .chat-user-status {
+            font-size: 0.78rem;
             color: var(--bone-400);
-            font-family: var(--font-ui);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--dur-fast);
-            border-bottom: 2px solid transparent;
         }
 
-        .tab-btn.active {
-            color: var(--ember);
-            border-bottom-color: var(--ember);
-            background: rgba(255, 90, 31, 0.04);
+        .chat-user-status strong {
+            color: var(--bone-200);
         }
 
         .sidebar-content {
@@ -462,20 +625,9 @@
             padding: 1.25rem;
             display: flex;
             flex-direction: column;
-            height: calc(100% - 110px);
+            height: calc(100% - 64px);
         }
 
-        .tab-content {
-            display: none;
-            height: 100%;
-            flex-direction: column;
-        }
-
-        .tab-content.active {
-            display: flex;
-        }
-
-        /* Chat Layout */
         .chat-messages {
             flex: 1;
             overflow-y: auto;
@@ -483,9 +635,10 @@
             flex-direction: column;
             gap: 0.85rem;
             margin-bottom: 1rem;
-            padding-right: 0.5rem;
+            padding-right: 0.25rem;
         }
 
+        /* Message Bubbles layout matching standard chat room */
         .chat-bubble {
             display: flex;
             flex-direction: column;
@@ -508,15 +661,15 @@
 
         .chat-bubble.other {
             align-self: flex-start;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.04);
             border: 1px solid var(--rule);
             color: var(--bone-200);
         }
 
         .chat-bubble.me {
             align-self: flex-end;
-            background: rgba(255, 90, 31, 0.1);
-            border: 1px solid rgba(255, 90, 31, 0.2);
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
             color: var(--bone-50);
         }
 
@@ -526,63 +679,60 @@
             text-transform: uppercase;
             letter-spacing: 0.03em;
             margin-bottom: 0.2rem;
-            color: var(--gold-leaf);
+            color: var(--violet);
         }
 
-        .chat-bubble.me .chat-sender {
-            color: var(--ember);
+        .chat-bubble.other .chat-sender {
+            color: #818cf8;
         }
 
+        /* Form input matching standard screen */
         .chat-input-container {
             display: flex;
-            gap: 0.5rem;
-        }
-
-        /* Partygoers List */
-        .users-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        .user-item {
-            display: flex;
+            gap: 0.65rem;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.6rem 0.85rem;
-            border-radius: var(--r-sm);
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(0, 0, 0, 0.25);
             border: 1px solid var(--rule);
-        }
-
-        .user-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--ember) 0%, var(--gold-leaf) 100%);
-            color: #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.9rem;
-        }
-
-        .user-name {
-            font-weight: 500;
-            font-size: 0.95rem;
-            flex: 1;
-        }
-
-        .user-badge {
-            font-size: 0.65rem;
-            font-weight: 700;
-            padding: 0.2rem 0.4rem;
             border-radius: var(--r-pill);
-            background: rgba(255, 90, 31, 0.1);
-            color: var(--ember);
-            border: 1px solid rgba(255, 90, 31, 0.2);
-            text-transform: uppercase;
+            padding: 0.25rem 0.25rem 0.25rem 1rem;
+        }
+
+        .chat-text-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--bone-50);
+            font-family: var(--font-ui);
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .chat-text-input::placeholder {
+            color: var(--bone-500);
+        }
+
+        .chat-send-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--violet);
+            color: white;
+            border: none;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            transition: all var(--dur-fast);
+        }
+
+        .chat-send-btn:hover {
+            background: var(--violet-hover);
+            transform: scale(1.05);
+        }
+
+        .chat-send-btn svg {
+            width: 16px;
+            height: 16px;
+            transform: rotate(45deg) translate(-1px, 1px);
         }
 
         .empty-state {
@@ -599,12 +749,28 @@
             font-size: 3rem;
             color: var(--bone-500);
         }
+
+        /* Scrollbar aesthetics */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: var(--r-pill);
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.16);
+        }
     </style>
 </head>
 <body>
 
     <!-- Main Header -->
-    <header>
+    <header id="main-header">
         <div class="header-inner">
             <a href="/" class="logo">
                 moovie <span>✦</span>
@@ -675,52 +841,74 @@
         <!-- ROOM WORKSPACE VIEW -->
         <section id="room-view" class="view">
             <div class="room-workspace">
-                <!-- Left: Video Embed Stream -->
+                <!-- Left Column: Video Embed Stream & Headers -->
                 <div class="player-container">
-                    <div class="player-header">
-                        <h3 id="room-playing-title" class="room-name">Feature Title</h3>
-                        <div id="host-controls-badge">
-                            <!-- Show host options -->
+                    
+                    <div class="workspace-header">
+                        <div class="workspace-title-area">
+                            <button class="leave-lobby-btn" onclick="showLobbyView()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                                Leave Lobby
+                            </button>
+                            <h2 id="room-playing-title" class="workspace-title">Mortal Kombat</h2>
+                        </div>
+                        
+                        <div class="stream-selectors">
+                            <span>STREAM:</span>
+                            <button id="stream-btn-vidplus" class="stream-selector-btn active" onclick="switchStreamProvider('vidplus')">VidPlus</button>
+                            <button id="stream-btn-videasy" class="stream-selector-btn" onclick="switchStreamProvider('videasy')">VidEasy</button>
+                            <button id="stream-btn-vidsrc" class="stream-selector-btn" onclick="switchStreamProvider('vidsrc')">VidSrc</button>
+                            
+                            <button class="lights-out-btn" onclick="toggleLightsOut()">
+                                💡 Lights Out
+                            </button>
                         </div>
                     </div>
-                    
-                    <iframe id="video-player-iframe" class="player-iframe" allowfullscreen allow="autoplay"></iframe>
-                    
-                    <div class="player-controls">
-                        <button id="room-play-btn" class="btn btn-primary" style="padding: 0.5rem 1rem;" onclick="togglePlayState()">
-                            Play / Pause
+
+                    <!-- Info Banner -->
+                    <div class="workspace-banner">
+                        <div class="banner-progress">
+                            <span>🎬 Room Progress:</span>
+                            <span id="progress-timer" class="banner-progress-time">00:00:00</span>
+                        </div>
+                        <button class="banner-sync-btn" onclick="showSyncInstructions()">
+                            Click here to see where to sync your player
                         </button>
-                        <div class="timeline-slider" id="room-timeline" onclick="handleSeek(event)">
-                            <div class="timeline-progress" id="room-progress"></div>
-                        </div>
                     </div>
+
+                    <!-- Video Iframe -->
+                    <div class="player-stage">
+                        <iframe id="video-player-iframe" class="player-iframe" allowfullscreen allow="autoplay"></iframe>
+                    </div>
+
                 </div>
 
-                <!-- Right: Active Chat & Participants Sidebar -->
+                <!-- Right Column: Lobby Chat -->
                 <div class="sidebar">
-                    <div class="sidebar-tabs">
-                        <button class="tab-btn active" onclick="switchTab('chat-tab')">Real-time Chat</button>
-                        <button class="tab-btn" onclick="switchTab('users-tab')">Partygoers</button>
+                    <div class="sidebar-header">
+                        <div class="chat-title-group">
+                            <div class="chat-status-dot"></div>
+                            <span>Lobby Chat</span>
+                        </div>
+                        <div id="users-badge-container" class="chat-user-status">
+                            Joined: <strong id="chat-my-name">Guest</strong> (<span id="chat-online-count">1</span> online)
+                        </div>
                     </div>
 
                     <div class="sidebar-content">
-                        <!-- Chat Tab -->
-                        <div id="chat-tab" class="tab-content active">
-                            <div id="chat-box" class="chat-messages">
-                                <!-- Messages injected dynamically -->
-                            </div>
-                            <form id="chat-form" onsubmit="handleSendChat(event)" class="chat-input-container">
-                                <input type="text" id="chat-input" class="form-input" placeholder="Say something..." autocomplete="off" required>
-                                <button type="submit" class="btn btn-primary">Send</button>
-                            </form>
+                        <div id="chat-box" class="chat-messages">
+                            <!-- Messages injected dynamically -->
                         </div>
-
-                        <!-- Participants Tab -->
-                        <div id="users-tab" class="tab-content">
-                            <div id="users-box" class="users-list">
-                                <!-- Users list dynamically generated -->
-                            </div>
-                        </div>
+                        
+                        <form id="chat-form" onsubmit="handleSendChat(event)" class="chat-input-container">
+                            <input type="text" id="chat-input" class="chat-text-input" placeholder="Say something to the group..." autocomplete="off" required>
+                            <button type="submit" class="chat-send-btn" aria-label="Send message">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -735,8 +923,38 @@
 
         // Parse query params (Direct Join or Stream details transfer)
         const urlParams = new URLSearchParams(window.location.search);
-        const joinRoomId = urlParams.get('room');
-        const prefillTitle = urlParams.get('title');
+        const joinRoomId = urlParams.get('room') || '';
+        const prefillTitle = urlParams.get('title') || '';
+
+        // Parsing room parameter for custom player URLs
+        let isTv = false;
+        let mediaId = joinRoomId;
+        let season = 1;
+        let episode = 1;
+
+        if (joinRoomId.includes('_s')) {
+            isTv = true;
+            const parts = joinRoomId.split('_s');
+            mediaId = parts[0];
+            const epParts = parts[1].split('e');
+            season = parseInt(epParts[0]) || 1;
+            episode = parseInt(epParts[1]) || 1;
+        }
+
+        // Available Stream Servers
+        const streamUrls = {
+            vidplus: isTv 
+                ? `https://vidlink.pro/tv/${mediaId}/${season}/${episode}?primaryColor=6366f1`
+                : `https://vidlink.pro/movie/${mediaId}?primaryColor=6366f1`,
+            videasy: isTv
+                ? `https://player.videasy.net/tv/${mediaId}/${season}/${episode}?color=6366f1`
+                : `https://player.videasy.net/movie/${mediaId}?color=6366f1`,
+            vidsrc: isTv
+                ? `https://vidsrc.to/embed/tv/${mediaId}/${season}/${episode}`
+                : `https://vidsrc.to/embed/movie/${mediaId}`
+        };
+
+        let activeProvider = 'vidplus';
 
         // Session Setup
         let currentUserName = localStorage.getItem('movora_username');
@@ -752,6 +970,8 @@
         let channel = null;
         let isHost = false;
         let presenceTracker = {};
+        let progressTimerInterval = null;
+        let startTime = Date.now();
 
         // Update Header user badge
         function updateHeaderBadge() {
@@ -762,6 +982,7 @@
                     <button class="btn btn-secondary" style="padding: 0.4rem 0.85rem;" onclick="changeNickname()">Rename</button>
                 </div>
             `;
+            document.getElementById('chat-my-name').textContent = currentUserName;
         }
 
         function changeNickname() {
@@ -778,9 +999,13 @@
 
         // View Toggling
         function showLobbyView() {
+            // Cancel Lights Out
+            document.body.classList.remove('lights-out-mode');
+
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById('lobby-view').classList.add('active');
             window.history.pushState({}, '', window.location.pathname);
+            stopProgressTimer();
             loadActiveRooms();
         }
 
@@ -794,22 +1019,99 @@
             document.getElementById('room-view').classList.add('active');
             
             document.getElementById('room-playing-title').textContent = room.movie_title || room.name;
+            
+            // Build current stream provider source URL
             const iframe = document.getElementById('video-player-iframe');
-            iframe.src = room.embed_sources;
+            
+            // Setup prefill URL templates or direct embed mapping
+            if (room.embed_sources && !room.embed_sources.startsWith('http')) {
+                // If it's a raw movie ID or similar, use our templates
+                mediaId = room.embed_sources;
+                isTv = room.embed_sources.includes('_s');
+                if (isTv) {
+                    const parts = room.embed_sources.split('_s');
+                    mediaId = parts[0];
+                    const epParts = parts[1].split('e');
+                    season = parseInt(epParts[0]) || 1;
+                    episode = parseInt(epParts[1]) || 1;
+                }
+                updateProviderUrls();
+                iframe.src = streamUrls[activeProvider];
+            } else {
+                iframe.src = room.embed_sources || streamUrls[activeProvider];
+            }
 
             window.history.pushState({}, '', `?room=${room.id}`);
             
             // Connect to real-time sync channel
             connectToRealtimeRoom(room);
+            startProgressTimer();
         }
 
-        // Tab Switching in Sidebar
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        function updateProviderUrls() {
+            streamUrls.vidplus = isTv 
+                ? `https://vidlink.pro/tv/${mediaId}/${season}/${episode}?primaryColor=6366f1`
+                : `https://vidlink.pro/movie/${mediaId}?primaryColor=6366f1`;
+            streamUrls.videasy = isTv
+                ? `https://player.videasy.net/tv/${mediaId}/${season}/${episode}?color=6366f1`
+                : `https://player.videasy.net/movie/${mediaId}?color=6366f1`;
+            streamUrls.vidsrc = isTv
+                ? `https://vidsrc.to/embed/tv/${mediaId}/${season}/${episode}`
+                : `https://vidsrc.to/embed/movie/${mediaId}`;
+        }
+
+        // Switch stream server (VidPlus, VidEasy, VidSrc)
+        function switchStreamProvider(providerId) {
+            activeProvider = providerId;
+            document.querySelectorAll('.stream-selector-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`stream-btn-${providerId}`).classList.add('active');
+
+            const iframe = document.getElementById('video-player-iframe');
+            iframe.src = streamUrls[providerId];
+
+            if (channel) {
+                channel.send({
+                    type: 'broadcast',
+                    event: 'server_change',
+                    payload: { provider: providerId }
+                });
+            }
+        }
+
+        // Lights Out toggler
+        function toggleLightsOut() {
+            document.body.classList.toggle('lights-out-mode');
+        }
+
+        // Show sync instructions alert matching CLICK HERE
+        function showSyncInstructions() {
+            alert(
+                "🎬 Playback Synchronization:\n\n" +
+                "To ensure everyone watches completely synchronously, simply play, pause, or seek the player.\n" +
+                "Your actions will instantly broadcast to all online lobby viewers. Enjoy your Watch Party!"
+            );
+        }
+
+        // Progress timer simulation
+        function startProgressTimer() {
+            startTime = Date.now();
+            const el = document.getElementById('progress-timer');
             
-            event.target.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
+            stopProgressTimer();
+            progressTimerInterval = setInterval(() => {
+                const diff = Date.now() - startTime;
+                const hrs = String(Math.floor(diff / 3600000)).padStart(2, '0');
+                const mins = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+                const secs = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+                el.textContent = `${hrs}:${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function stopProgressTimer() {
+            if (progressTimerInterval) {
+                clearInterval(progressTimerInterval);
+                progressTimerInterval = null;
+            }
         }
 
         // Database Rooms queries
@@ -920,17 +1222,22 @@
                 }
             });
 
-            // Listen for system Broadcast events (sync play/pause/seek)
+            // Listen for system Broadcast events (sync play/pause/seek/server)
             channel
                 .on('broadcast', { event: 'chat' }, (payload) => {
                     appendChatMessage(payload.payload.user, payload.payload.message, 'other');
                 })
-                .on('broadcast', { event: 'playback' }, (payload) => {
-                    handleRemoteSync(payload.payload);
+                .on('broadcast', { event: 'server_change' }, (payload) => {
+                    activeProvider = payload.payload.provider;
+                    document.querySelectorAll('.stream-selector-btn').forEach(btn => btn.classList.remove('active'));
+                    document.getElementById(`stream-btn-${activeProvider}`).classList.add('active');
+                    const iframe = document.getElementById('video-player-iframe');
+                    iframe.src = streamUrls[activeProvider];
+                    appendChatMessage('System', `Stream provider switched to ${activeProvider.toUpperCase()}.`, 'system');
                 })
                 .on('presence', { event: 'sync' }, () => {
                     const state = channel.presenceState();
-                    updateUsersList(state);
+                    updateUsersCount(state);
                 })
                 .on('presence', { event: 'join' }, ({ key, newPresences }) => {
                     appendChatMessage('System', `${key} joined the watch party!`, 'system');
@@ -990,78 +1297,11 @@
             box.scrollTop = box.scrollHeight;
         }
 
-        // Participants UI helper
-        function updateUsersList(presenceState) {
-            const box = document.getElementById('users-box');
-            box.innerHTML = '';
-
-            Object.keys(presenceState).forEach(key => {
-                const profile = presenceState[key][0];
-                const initial = key.charAt(0).toUpperCase();
-
-                const item = document.createElement('div');
-                item.className = 'user-item';
-                item.innerHTML = `
-                    <div class="user-avatar">${initial}</div>
-                    <div class="user-name">${key}</div>
-                    ${profile.isHost ? '<span class="user-badge">Host</span>' : ''}
-                `;
-                box.appendChild(item);
-            });
-        }
-
-        // Playback Synchronization (Broadcast & Receive play/pause/seek)
-        let lastPlayedState = false;
-
-        function togglePlayState() {
-            lastPlayedState = !lastPlayedState;
-            const progress = document.getElementById('room-progress');
-            
-            if (channel) {
-                channel.send({
-                    type: 'broadcast',
-                    event: 'playback',
-                    payload: {
-                        action: lastPlayedState ? 'play' : 'pause',
-                        timestamp: Date.now()
-                    }
-                });
-            }
-
-            appendChatMessage('System', `Playback ${lastPlayedState ? 'resumed' : 'paused'} by ${currentUserName}`, 'system');
-        }
-
-        function handleRemoteSync(data) {
-            const progress = document.getElementById('room-progress');
-            if (data.action === 'play') {
-                progress.style.width = '45%'; // Visual feedback simulation
-                appendChatMessage('System', `Playback resumed via cloud sync.`, 'system');
-            } else if (data.action === 'pause') {
-                appendChatMessage('System', `Playback paused via cloud sync.`, 'system');
-            } else if (data.action === 'seek') {
-                progress.style.width = `${data.percentage}%`;
-                appendChatMessage('System', `Synced seek timestamp to ${data.percentage}%.`, 'system');
-            }
-        }
-
-        function handleSeek(e) {
-            const rect = e.target.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const percentage = Math.round((x / rect.width) * 100);
-            
-            const progress = document.getElementById('room-progress');
-            progress.style.width = `${percentage}%`;
-
-            if (channel) {
-                channel.send({
-                    type: 'broadcast',
-                    event: 'playback',
-                    payload: {
-                        action: 'seek',
-                        percentage: percentage
-                    }
-                });
-            }
+        // Participants count status helper
+        function updateUsersCount(presenceState) {
+            const onlineCountEl = document.getElementById('chat-online-count');
+            const count = Object.keys(presenceState).length;
+            onlineCountEl.textContent = count;
         }
 
         // Page Init logic
@@ -1073,20 +1313,9 @@
                 if (prefillTitle) {
                     showCreateView();
                     document.getElementById('form-movie-title').value = prefillTitle;
-                    // Auto construct embed URL based on parameter passed
-                    const isTv = joinRoomId.includes('_s');
-                    let baseEmbed = `https://vidsrc.to/embed/movie/${joinRoomId}`;
-                    if (isTv) {
-                        const parts = joinRoomId.split('_');
-                        const showId = parts[0];
-                        const epStr = parts[1]; // e.g. s1e1
-                        const sMatch = epStr.match(/s(\d+)/i);
-                        const eMatch = epStr.match(/e(\d+)/i);
-                        const season = sMatch ? sMatch[1] : 1;
-                        const episode = eMatch ? eMatch[1] : 1;
-                        baseEmbed = `https://vidsrc.to/embed/tv/${showId}/${season}/${episode}`;
-                    }
-                    document.getElementById('form-embed-url').value = baseEmbed;
+                    
+                    // Set inputs
+                    document.getElementById('form-embed-url').value = joinRoomId;
                     document.getElementById('form-room-name').value = `${currentUserName}'s Watch Lounge`;
                 } else {
                     joinExistingRoom(joinRoomId);
