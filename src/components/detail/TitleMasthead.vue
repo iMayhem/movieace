@@ -139,7 +139,7 @@ export default defineComponent({
         showTrailer: { type: Boolean, default: true }
     },
     setup(props) {
-        const IMAGE_BASEURL = (import.meta as any).env.VITE_IMAGE_BASE_URL;
+        const IMAGE_BASEURL = (import.meta as any).env.VITE_IMAGE_BASE_URL || 'https://image.tmdb.org/t/p/';
 
         const rootRef = ref<HTMLElement | null>(null);
         const ambientPath = computed(() => props.backdropPath || props.posterPath);

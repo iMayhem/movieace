@@ -3,7 +3,7 @@ import { Movie } from '../composables/useHighlights';
 import { MovieDetails } from '../composables/useMovies';
 import { TVShowDetails } from '../composables/useTvShows';
 
-const IMAGE_BASEURL = import.meta.env.VITE_IMAGE_BASE_URL;
+const IMAGE_BASEURL = import.meta.env.VITE_IMAGE_BASE_URL || 'https://image.tmdb.org/t/p/';
 
 const selectSize = (size: "medium" | "large" | "small") => {
     const sizeOptions = {

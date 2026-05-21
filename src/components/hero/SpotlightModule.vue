@@ -97,7 +97,7 @@ export default defineComponent({
         runtime: { type: String, default: '' }
     },
     setup(props) {
-        const IMAGE_BASEURL = (import.meta as any).env.VITE_IMAGE_BASE_URL;
+        const IMAGE_BASEURL = (import.meta as any).env.VITE_IMAGE_BASE_URL || 'https://image.tmdb.org/t/p/';
 
         const artUrl = computed(() => {
             const path = props.backdropPath || props.posterPath;
