@@ -15,15 +15,21 @@ const selectSize = (size: "medium" | "large" | "small") => {
 }
 export const useWebImage = (url: string, size: "medium" | "large" | "small" = "medium") => {
     let imgSize = selectSize(size)
-    return `${IMAGE_BASEURL}${imgSize}/${url}`
+    const baseUrl = IMAGE_BASEURL.endsWith('/') ? IMAGE_BASEURL : `${IMAGE_BASEURL}/`
+    const cleanUrl = url.startsWith('/') ? url.slice(1) : url
+    return `${baseUrl}${imgSize}/${cleanUrl}`
 }
 // return {
 //     backdrop: movie.value?.backdrop_path === null ? empty_movie_state : `${IMAGE_BASEURL}w1280${movie.value?.backdrop_path}`,
 //     poster: movie.value?.poster_path === null ? empty_movie_state : `${IMAGE_BASEURL}w780${movie.value?.poster_path}`
 // };
 export const getMovieImageUrl = (data: Movie | MovieDetails | TVShowDetails) => {
-    const backdrop = data.backdrop_path === null ? empty_movie_state : `${IMAGE_BASEURL}w1280${data.backdrop_path}`;
-    const poster = data.poster_path === null ? empty_movie_state : `${IMAGE_BASEURL}w780${data.poster_path}`;
+    const baseUrl = IMAGE_BASEURL.endsWith('/') ? IMAGE_BASEURL : `${IMAGE_BASEURL}/`
+    const cleanBackdrop = data.backdrop_path ? (data.backdrop_path.startsWith('/') ? data.backdrop_path.slice(1) : data.backdrop_path) : null
+    const cleanPoster = data.poster_path ? (data.poster_path.startsWith('/') ? data.poster_path.slice(1) : data.poster_path) : null
+
+    const backdrop = cleanBackdrop === null ? empty_movie_state : `${baseUrl}w1280/${cleanBackdrop}`;
+    const poster = cleanPoster === null ? empty_movie_state : `${baseUrl}w780/${cleanPoster}`;
     return {
         backdrop,
         poster
