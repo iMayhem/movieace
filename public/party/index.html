@@ -422,12 +422,9 @@
             }
         }
 
+        /* Keep the two-column layout in lights-out so chat stays visible */
         body.lights-out-mode .room-workspace {
-            grid-template-columns: 1fr;
-        }
-
-        body.lights-out-mode .sidebar {
-            display: none !important;
+            grid-template-columns: 1fr 380px;
         }
 
         .player-container {
