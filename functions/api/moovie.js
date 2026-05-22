@@ -8,7 +8,9 @@ const session = new MovieboxSession({
   fetch: (url, init) => {
     const headers = new Headers(init?.headers);
     headers.set('referer', 'https://h5.aoneroom.com');
-    return fetch(url.toString(), { ...init, headers });
+    // Proxy all backend API calls through the trusted VPS proxy to bypass Cloudflare IP geo-blocking
+    const proxiedUrl = `${PROXY}${url.toString()}`;
+    return fetch(proxiedUrl, { ...init, headers });
   }
 });
 
