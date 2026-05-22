@@ -25,7 +25,7 @@ export async function getMovieboxStream(params: {
     query.append('year', String(params.year));
   }
 
-  const res = await fetch(`/.netlify/functions/moviebox?${query.toString()}`);
+  const res = await fetch(`/api/moviebox?${query.toString()}`);
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

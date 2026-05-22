@@ -1,8 +1,12 @@
 [build]
   command = "yarn run build"
   publish = "dist"
-  functions = "netlify/functions"
 
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# SPA fallback — must be last
 [[redirects]]
   from = "/*"
   to = "/index.html"
