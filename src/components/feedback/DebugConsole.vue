@@ -239,6 +239,7 @@ export default defineComponent({
   flex-direction: column;
   overflow: hidden;
   opacity: 0;
+  visibility: hidden;
   transform: translateY(15px) scale(0.97);
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   backdrop-filter: blur(25px);
@@ -246,6 +247,7 @@ export default defineComponent({
 
   .debug-console--open & {
     opacity: 1;
+    visibility: visible;
     transform: translateY(0) scale(1);
   }
 }
