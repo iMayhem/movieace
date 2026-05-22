@@ -212,7 +212,8 @@ app.get('/vps-proxy/search', async (req, res) => {
 // ============================================================================
 app.get('/vps-proxy/resolve', async (req, res) => {
   try {
-    const { detailPath, subjectId, type = 'movie', season = 0, episode = 0 } = req.query;
+    const { detailPath, type = 'movie', season = 0, episode = 0 } = req.query;
+    const subjectId = req.query.subjectId || req.query.id;
 
     if (!detailPath || !subjectId) {
       return res.status(400).json({
@@ -290,7 +291,11 @@ app.get('/vps-proxy/resolve', async (req, res) => {
     }
 
     // Step 3: Extract and normalize stream options
-    const streams = playData.streams || [];
+    let streams = playData.streams || [];
+    if (streams.length === 0 && downloadData.downloads && downloadData.downloads.length > 0) {
+      console.log('[RESOLVE] Streams array empty; falling back to download options');
+      streams = downloadData.downloads;
+    }
     
     if (streams.length === 0) {
       return res.status(404).json({
@@ -301,7 +306,7 @@ app.get('/vps-proxy/resolve', async (req, res) => {
 
     const streamOptions = streams
       .map(stream => {
-        const resolution = parseInt(stream.resolutions) || 0;
+        const resolution = parseInt(stream.resolutions) || parseInt(stream.resolution) || 0;
         const sizeBytes = parseInt(stream.size) || 0;
         const durationSeconds = parseInt(stream.duration) || 0;
         

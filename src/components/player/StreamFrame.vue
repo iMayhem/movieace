@@ -125,7 +125,7 @@ export default defineComponent({
         const hasError = ref(false);
 
         // Native streaming states
-        const isNative = computed(() => props.embedUrl && props.embedUrl.startsWith('http://161.118.191.46'));
+        const isNative = computed(() => props.embedUrl && (props.embedUrl.startsWith('http://161.118.191.46') || props.embedUrl.startsWith('https://api.moovie.fun')));
         const videoUrl = ref('');
         const subtitles = ref<Array<{ label: string; src: string; srclang: string; default: boolean }>>([]);
         const resolutions = ref<Array<{ label: string; url: string }>>([]);
@@ -224,7 +224,7 @@ export default defineComponent({
                 const titleEnc = encodeURIComponent(props.title);
 
                 // Step 1: Search VPS API to get the correct Moviebox subject ID and detailPath
-                const searchUrl = `http://161.118.191.46/vps-proxy/search?q=${titleEnc}&type=${type === 'movie' ? 'movie' : 'tv'}`;
+                const searchUrl = `https://api.moovie.fun/vps-proxy/search?q=${titleEnc}&type=${type === 'movie' ? 'movie' : 'tv'}`;
                 const searchRes = await fetch(searchUrl);
                 if (!searchRes.ok) throw new Error('Metadata resolver is currently offline');
                 
@@ -236,7 +236,7 @@ export default defineComponent({
                 const subjectId = item.id;
 
                 // Step 2: Resolve stream options and subtitles
-                const resolveUrl = `http://161.118.191.46/vps-proxy/resolve?detailPath=${encodeURIComponent(detailPath)}&id=${subjectId}&type=${type}&season=${props.season}&episode=${props.episode}`;
+                const resolveUrl = `https://api.moovie.fun/vps-proxy/resolve?detailPath=${encodeURIComponent(detailPath)}&subjectId=${subjectId}&type=${type}&season=${props.season}&episode=${props.episode}`;
                 const resolveRes = await fetch(resolveUrl);
                 if (!resolveRes.ok) throw new Error('Failed to resolve media stream URLs');
 
