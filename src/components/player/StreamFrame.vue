@@ -11,38 +11,7 @@
             <div class="stream-frame__player">
                 <!-- If Moviebox Direct: Render premium native HTML5 player -->
                 <div v-if="isNative && !resolveError" class="stream-frame__native-wrapper">
-                    <video
-                        v-if="videoUrl"
-                        ref="videoEl"
-                        :src="videoUrl"
-                        controls
-                        autoplay
-                        crossorigin="anonymous"
-                        class="stream-frame__video"
-                    >
-                        <track
-                            v-for="sub in subtitles"
-                            :key="sub.src"
-                            kind="subtitles"
-                            :label="sub.label"
-                            :src="sub.src"
-                            :srclang="sub.srclang"
-                            :default="sub.default"
-                        />
-                    </video>
-                    
-                    <!-- Premium Settings / Resolution Selection Overlay -->
-                    <div v-if="videoUrl && resolutions.length > 1" class="stream-frame__settings-bar">
-                        <span class="meta">Cinema Direct</span>
-                        <div class="stream-frame__selector">
-                            <label for="resolution-select">Quality:</label>
-                            <select id="resolution-select" v-model="videoUrl" @change="onResolutionChange">
-                                <option v-for="res in resolutions" :key="res.url" :value="res.url">
-                                    {{ res.label }}
-                                </option>
-                            </select>
-                        </div>
-                    </div>
+                    <div v-if="videoUrl" ref="artPlayerRef" class="stream-frame__artplayer" />
 
                     <!-- Custom Loader for Direct API resolution -->
                     <div v-if="isResolving" class="stream-frame__loading" role="status" aria-live="polite">
@@ -104,6 +73,7 @@ import { computed, defineComponent, onMounted, onUnmounted, ref, watch } from 'v
 import { useWebImage } from '../../utils/useWebImage';
 import { useAmbientColor } from '../../composables/useAmbientColor';
 import { startProgressTracking } from '../../composables/useProgress';
+import Artplayer from 'artplayer';
 
 export default defineComponent({
     name: 'StreamFrame',
@@ -120,7 +90,8 @@ export default defineComponent({
     setup(props) {
         const rootRef = ref<HTMLElement | null>(null);
         const frameEl = ref<HTMLIFrameElement | null>(null);
-        const videoEl = ref<HTMLVideoElement | null>(null);
+        const artPlayerRef = ref<HTMLElement | null>(null);
+        let artplayerInstance: Artplayer | null = null;
         const isLoading = ref(true);
         const hasError = ref(false);
 
@@ -273,10 +244,107 @@ export default defineComponent({
             }
         };
 
-        const onResolutionChange = (event: Event) => {
-            const select = event.target as HTMLSelectElement;
-            videoUrl.value = select.value;
+        const initArtPlayer = () => {
+            if (!artPlayerRef.value || !videoUrl.value) return;
+
+            if (artplayerInstance) {
+                artplayerInstance.destroy();
+                artplayerInstance = null;
+            }
+
+            const qualityList = resolutions.value.map((res: any) => ({
+                html: res.label,
+                url: res.url,
+                default: res.url === videoUrl.value
+            }));
+
+            const subtitleList = subtitles.value.map((sub: any) => ({
+                html: sub.label,
+                url: sub.src,
+                default: sub.default
+            }));
+
+            const activeSub = subtitleList.find((s) => s.default);
+
+            artplayerInstance = new Artplayer({
+                container: artPlayerRef.value as HTMLDivElement,
+                url: videoUrl.value,
+                autoplay: true,
+                autoSize: true,
+                playbackRate: true,
+                aspectRatio: true,
+                setting: true,
+                hotkey: true,
+                pip: true,
+                fullscreen: true,
+                fullscreenWeb: true,
+                miniProgressBar: true,
+                theme: '#E50914', // Premium Netflix Red theme
+                quality: qualityList,
+                subtitle: activeSub ? {
+                    url: activeSub.url,
+                    type: 'vtt',
+                    style: {
+                        color: '#ffffff',
+                        fontSize: '24px',
+                        textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)'
+                    }
+                } : undefined,
+                settings: [
+                    {
+                        html: 'Subtitles',
+                        width: 250,
+                        tooltip: activeSub?.html || 'Off',
+                        selector: [
+                            {
+                                html: 'Off',
+                                default: !activeSub,
+                                url: ''
+                            },
+                            ...subtitleList.map((sub) => ({
+                                html: sub.html,
+                                default: sub.default,
+                                url: sub.url
+                            }))
+                        ],
+                        onSelect: (item: any) => {
+                            if (artplayerInstance) {
+                                if (item.url) {
+                                    artplayerInstance.subtitle.url = item.url;
+                                    artplayerInstance.subtitle.show = true;
+                                } else {
+                                    artplayerInstance.subtitle.show = false;
+                                }
+                            }
+                            return item.html;
+                        }
+                    }
+                ]
+            });
+
+            artplayerInstance.on('quality', (quality: any) => {
+                console.log('[ARTPLAYER] Quality changed:', quality.html);
+                videoUrl.value = quality.url;
+            });
         };
+
+        watch(videoUrl, (next) => {
+            if (next && isNative.value) {
+                if (!artplayerInstance) {
+                    initArtPlayer();
+                } else if (artplayerInstance.url !== next) {
+                    (artplayerInstance as any).switch(next);
+                }
+            }
+        });
+
+        watch([resolutions, subtitles], () => {
+            if (isNative.value && videoUrl.value) {
+                window.setTimeout(() => {
+                    initArtPlayer();
+                }, 50);
+            }
+        });
 
         watch(
             () => props.embedUrl,
@@ -323,6 +391,10 @@ export default defineComponent({
 
         onUnmounted(() => {
             stopMessages();
+            if (artplayerInstance) {
+                artplayerInstance.destroy();
+                artplayerInstance = null;
+            }
             if (stopTracking) {
                 stopTracking();
                 stopTracking = null;
@@ -332,7 +404,7 @@ export default defineComponent({
         return {
             rootRef,
             frameEl,
-            videoEl,
+            artPlayerRef,
             isLoading,
             hasError,
             loadingLabel,
@@ -346,8 +418,7 @@ export default defineComponent({
             onLoad,
             onError,
             retry,
-            resolveStream,
-            onResolutionChange
+            resolveStream
         };
     }
 });
@@ -417,20 +488,12 @@ export default defineComponent({
         background: #000;
     }
 
-    &__video {
+    &__artplayer {
+        position: absolute;
+        inset: 0;
         width: 100%;
         height: 100%;
-        object-fit: contain;
         background: #000;
-
-        &::cue {
-            background: rgba(11, 10, 8, 0.85);
-            color: var(--bone-50);
-            font-family: var(--font-ui);
-            font-size: var(--fs-lg);
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-            border-radius: var(--r-md);
-        }
     }
 
     &__settings-bar {
