@@ -47,7 +47,7 @@ export default defineComponent({
     setup() {
         const state = ref<PlayerState>('loading');
         const errorMessage = ref('No stream found for this title.');
-        const artRef = ref<HTMLElement | null>(null);
+        const artRef = ref<HTMLDivElement | null>(null);
         let art: Artplayer | null = null;
 
         const loadingLabel = ref(LOADING_MESSAGES[0]);
