@@ -6,19 +6,9 @@ const session = new MovieboxSession({
   host: 'h5.aoneroom.com',
   mirrorHosts: ['h5.aoneroom.com', 'movieboxapp.in'],
   fetch: (url, init) => {
-    const originalUrl = url.toString();
-    const proxiedUrl = `${PROXY}${originalUrl}`;
-
     const headers = new Headers(init?.headers);
-    const existingReferer = headers.get('referer') || headers.get('Referer');
-    if (existingReferer && existingReferer.startsWith(PROXY)) {
-      // Strip proxy prefix to preserve the real aoneroom.com referer
-      headers.set('referer', existingReferer.replace(PROXY, ''));
-    } else if (!existingReferer) {
-      headers.set('referer', 'https://h5.aoneroom.com');
-    }
-
-    return fetch(proxiedUrl, { ...init, headers });
+    headers.set('referer', 'https://h5.aoneroom.com');
+    return fetch(url.toString(), { ...init, headers });
   }
 });
 
