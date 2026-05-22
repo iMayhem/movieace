@@ -56,7 +56,7 @@
                 </div>
 
                 <div class="watch-stage__aside">
-                    <!-- Premium Dub / Sub Switcher -->
+                    <!-- Premium Dub / Sub Switcher styled exactly as standard components -->
                     <div class="language-switcher">
                         <p class="eyebrow language-switcher__header">Language Pref</p>
                         <div class="language-switcher__tabs">
@@ -79,63 +79,99 @@
                         </div>
                     </div>
 
-                    <div class="server-selector">
-                        <p class="eyebrow server-selector__header">Select Stream Mirror</p>
-                        <ul class="server-selector__list">
-                            <li
-                                v-for="(srv, idx) in availableServers"
-                                :key="srv.id"
-                                class="server-selector__item"
-                            >
-                                <button
-                                    type="button"
-                                    class="server-selector__btn"
-                                    :class="{ 'is-active': activeServerIndex === idx }"
-                                    @click="activeServerIndex = idx"
-                                >
-                                    <span class="server-selector__name">{{ srv.name }}</span>
-                                    <span class="server-selector__badge">Auto</span>
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
+                    <!-- Server Room Accordion used identically to Movie/Show pages -->
+                    <ServerAccordion
+                        :servers="availableServers"
+                        :active-server-index="activeServerIndex"
+                        @server-change="activeServerIndex = $event"
+                    />
                 </div>
             </div>
 
+            <!-- Highly Optimized Paginated Square Grid Episode Navigator with Search filter -->
             <section v-if="anime" class="watch-stage__rack">
                 <div class="episode-navigator">
-                    <div class="episode-navigator__header">
-                        <h3 class="episode-navigator__title">Episodes</h3>
-                        <div class="episode-navigator__actions">
+                    <header class="episode-navigator__head">
+                        <div class="episode-navigator__heading">
+                            <p class="eyebrow">Reel order</p>
+                            <h3 class="episode-navigator__title">
+                                Episodes
+                                <span class="meta episode-navigator__count">
+                                    · {{ totalEpisodes }} episodes
+                                </span>
+                            </h3>
+                        </div>
+
+                        <!-- Find Episode and Range controls -->
+                        <div class="episode-navigator__actions-row">
+                            <!-- Direct Search Input -->
+                            <div class="episode-search-bar">
+                                <span class="search-hash">#</span>
+                                <input
+                                    type="text"
+                                    placeholder="Find EP..."
+                                    v-model="searchQuery"
+                                    class="episode-search-input"
+                                />
+                            </div>
+
+                            <!-- Range Stepper (Hidden if searching) -->
+                            <div v-if="!searchQuery && ranges.length > 1" class="episode-navigator__controls" role="group" aria-label="Episode range selector">
+                                <button
+                                    type="button"
+                                    class="episode-navigator__nav"
+                                    :disabled="activeRangeIndex <= 0"
+                                    aria-label="Previous episode range"
+                                    @click="activeRangeIndex--"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width: 16px; height: 16px;">
+                                        <path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </button>
+                                <span class="episode-navigator__current" aria-live="polite">
+                                    {{ ranges[activeRangeIndex]?.label }}
+                                </span>
+                                <button
+                                    type="button"
+                                    class="episode-navigator__nav"
+                                    :disabled="activeRangeIndex >= ranges.length - 1"
+                                    aria-label="Next episode range"
+                                    @click="activeRangeIndex++"
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width: 16px; height: 16px;">
+                                        <path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <!-- paginated grid of episodes matching reference design -->
+                    <div class="episode-grid-container">
+                        <div v-if="displayedEpisodes.length === 0" class="no-results meta">
+                            No matching episodes found.
+                        </div>
+                        <div v-else class="episode-squares-grid">
                             <button
+                                v-for="ep in displayedEpisodes"
+                                :key="ep"
                                 type="button"
-                                class="episode-navigator__control"
-                                :disabled="currentEpisode <= 1"
-                                @click="goToEpisode(currentEpisode - 1)"
+                                class="ep-square"
+                                :class="{ 
+                                    'is-active': ep === currentEpisode,
+                                    'has-progress': animeProgress(ep) > 0
+                                }"
+                                :title="`Episode ${ep}`"
+                                @click="goToEpisode(ep)"
                             >
-                                Previous
-                            </button>
-                            <button
-                                type="button"
-                                class="episode-navigator__control"
-                                :disabled="currentEpisode >= totalEpisodes"
-                                @click="goToEpisode(currentEpisode + 1)"
-                            >
-                                Next
+                                <span class="ep-square__number">{{ ep }}</span>
+                                <div
+                                    v-if="animeProgress(ep) > 0"
+                                    class="ep-square__progress-dot"
+                                    :style="{ opacity: ep === currentEpisode ? 0.9 : 0.6 }"
+                                />
                             </button>
                         </div>
-                    </div>
-                    <div class="episode-navigator__grid">
-                        <button
-                            v-for="ep in totalEpisodes"
-                            :key="ep"
-                            type="button"
-                            class="episode-navigator__btn"
-                            :class="{ 'is-active': ep === currentEpisode }"
-                            @click="goToEpisode(ep)"
-                        >
-                            {{ ep }}
-                        </button>
                     </div>
                 </div>
             </section>
@@ -183,14 +219,17 @@
 import { computed, defineComponent, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAniList } from '../composables/useAniList';
-import { saveProgress } from '../composables/useProgress';
+import { saveProgress, getProgressPercent } from '../composables/useProgress';
 import { addViewedItem } from '../composables/useHistory';
+import { Server } from '../composables/useStream';
+import ServerAccordion from '../components/player/ServerAccordion.vue';
 import ArrowLeft from '../components/svg/outline/arrow-left-long.vue';
 
 export default defineComponent({
     name: 'StreamAnime',
     components: {
-        ArrowLeft
+        ArrowLeft,
+        ServerAccordion
     },
     setup() {
         const route = useRoute();
@@ -202,11 +241,12 @@ export default defineComponent({
         const currentEpisode = ref<number>(1);
         const activeServerIndex = ref<number>(0);
         const activeLanguage = ref<'sub' | 'dub'>('sub');
+        const activeRangeIndex = ref<number>(0);
+        const searchQuery = ref<string>('');
 
-        const availableServers = [
-            { id: 'animeplay_ani', name: 'AnimePlay CFD (Native)', url: 'https://animeplay.cfd/stream/ani/{id}/{episode}/{lang}' },
-            { id: 'animeplay_mal', name: 'AnimePlay CFD (MAL Link)', url: 'https://animeplay.cfd/stream/mal/{malId}/{episode}/{lang}' },
-            { id: 'animeplay_s2', name: 'AnimePlay CFD (Anikoto)', url: 'https://animeplay.cfd/stream/s-2/{id}/{lang}' }
+        const availableServers: Server[] = [
+            { name: 'AnimePlay CFD', urlTemplate: 'https://animeplay.cfd/stream/ani/{id}/{episode}/{lang}' },
+            { name: 'MegaPlay', urlTemplate: 'https://megaplay.buzz/stream/ani/{id}/{episode}/{lang}' }
         ];
 
         const animeTitle = computed(() => {
@@ -215,13 +255,72 @@ export default defineComponent({
         });
 
         const totalEpisodes = computed(() => {
-            return anime.value?.episodes || 1;
+            if (!anime.value) return 1;
+            if (anime.value.episodes) return anime.value.episodes;
+            if (anime.value.nextAiringEpisode?.episode) {
+                return anime.value.nextAiringEpisode.episode - 1;
+            }
+            if (anime.value.status === 'RELEASING') {
+                return Math.max(1200, currentEpisode.value + 50);
+            }
+            return 12;
+        });
+
+        const ranges = computed(() => {
+            const list = [];
+            const step = 100;
+            const total = totalEpisodes.value;
+            for (let i = 1; i <= total; i += step) {
+                const end = Math.min(i + step - 1, total);
+                list.push({
+                    start: i,
+                    end: end,
+                    label: `${String(i).padStart(3, '0')}-${String(end).padStart(3, '0')}`
+                });
+            }
+            return list;
+        });
+
+        // Watch currentEpisode to automatically set the range page index
+        watch(
+            [currentEpisode, ranges],
+            ([ep, rgs]) => {
+                if (rgs && rgs.length > 0) {
+                    const idx = rgs.findIndex((r: any) => ep >= r.start && ep <= r.end);
+                    if (idx !== -1) {
+                        activeRangeIndex.value = idx;
+                    }
+                }
+            },
+            { immediate: true }
+        );
+
+        const displayedEpisodes = computed(() => {
+            if (searchQuery.value) {
+                const cleanQuery = searchQuery.value.trim();
+                const matched: number[] = [];
+                const total = totalEpisodes.value;
+                for (let ep = 1; ep <= total; ep++) {
+                    if (String(ep).includes(cleanQuery)) {
+                        matched.push(ep);
+                    }
+                }
+                return matched.slice(0, 100); // cap results
+            }
+
+            const range = ranges.value[activeRangeIndex.value];
+            if (!range) return [];
+            const eps = [];
+            for (let ep = range.start; ep <= range.end; ep++) {
+                eps.push(ep);
+            }
+            return eps;
         });
 
         const currentEmbedUrl = computed(() => {
             const server = availableServers[activeServerIndex.value];
             const malId = anime.value?.idMal ? String(anime.value.idMal) : String(animeId.value);
-            return server.url
+            return server.urlTemplate
                 .replace('{id}', String(animeId.value))
                 .replace('{malId}', malId)
                 .replace('{episode}', String(currentEpisode.value))
@@ -232,6 +331,10 @@ export default defineComponent({
             const titleStr = `${animeTitle.value} - Episode ${currentEpisode.value}`;
             return `/party/?room=anime_${animeId.value}_ep${currentEpisode.value}&title=${encodeURIComponent(titleStr)}`;
         });
+
+        const animeProgress = (epNumber: number) => {
+            return getProgressPercent(animeId.value, 'anime', 1, epNumber) / 100;
+        };
 
         const loadAnime = async (id: number) => {
             try {
@@ -264,6 +367,20 @@ export default defineComponent({
             if (ep >= 1 && ep <= totalEpisodes.value) {
                 currentEpisode.value = ep;
                 router.push(`/stream/anime/${animeId.value}/episode/${ep}`);
+            }
+        };
+
+        // Keyboard navigation for step increment
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            if (e.key === 'ArrowLeft') {
+                if (currentEpisode.value > 1) {
+                    goToEpisode(currentEpisode.value - 1);
+                }
+            } else if (e.key === 'ArrowRight') {
+                if (currentEpisode.value < totalEpisodes.value) {
+                    goToEpisode(currentEpisode.value + 1);
+                }
             }
         };
 
@@ -301,10 +418,12 @@ export default defineComponent({
             }
             loadAnime(animeId.value);
             window.addEventListener('message', handlePlayerMessage);
+            window.addEventListener('keydown', handleKeyDown);
         });
 
         onUnmounted(() => {
             window.removeEventListener('message', handlePlayerMessage);
+            window.removeEventListener('keydown', handleKeyDown);
         });
 
         watch(
@@ -327,6 +446,11 @@ export default defineComponent({
             currentEmbedUrl,
             partyHref,
             activeLanguage,
+            animeProgress,
+            ranges,
+            activeRangeIndex,
+            searchQuery,
+            displayedEpisodes,
             goBack,
             goToEpisode
         };
@@ -488,10 +612,9 @@ export default defineComponent({
     }
 
     &__rack {
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--ink-800);
         border: 1px solid var(--rule);
-        border-radius: var(--r-md);
-        padding: var(--s-5);
+        border-radius: var(--r-lg);
     }
 
     &__feature {
@@ -572,9 +695,9 @@ export default defineComponent({
 }
 
 .language-switcher {
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--ink-800);
     border: 1px solid var(--rule);
-    border-radius: var(--r-md);
+    border-radius: var(--r-lg);
     padding: var(--s-4);
     display: flex;
     flex-direction: column;
@@ -617,157 +740,210 @@ export default defineComponent({
     }
 }
 
-.server-selector {
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid var(--rule);
-    border-radius: var(--r-md);
-    padding: var(--s-4);
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-3);
-
-    &__header {
-        margin: 0;
-    }
-
-    &__list {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--s-2);
-    }
-
-    &__btn {
-        width: 100%;
-        padding: 0.75rem var(--s-4);
-        border-radius: var(--r-sm);
-        border: 1px solid var(--rule);
-        background: rgba(255, 255, 255, 0.02);
-        color: var(--bone-200);
-        cursor: pointer;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        transition: all var(--dur-fast);
-
-        &:hover {
-            border-color: var(--rule-strong);
-            background: rgba(255, 255, 255, 0.04);
-            color: var(--bone-50);
-        }
-
-        &.is-active {
-            border-color: var(--ember);
-            background: rgba(255, 90, 31, 0.08);
-            color: var(--ember);
-            font-weight: 600;
-        }
-    }
-
-    &__badge {
-        font-size: 0.65rem;
-        font-family: var(--font-mono);
-        padding: 2px 6px;
-        border-radius: var(--r-pill);
-        border: 1px solid currentColor;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-}
-
 .episode-navigator {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-4);
+    background: var(--ink-800);
+    border-radius: var(--r-lg);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    padding: var(--s-5) var(--s-5);
+    display: grid;
+    gap: var(--s-5);
 
-    &__header {
+    @media (min-width: 768px) {
+        padding: var(--s-6);
+    }
+
+    &__head {
         display: flex;
-        justify-content: space-between;
+        flex-wrap: wrap;
         align-items: center;
+        justify-content: space-between;
+        gap: var(--s-4);
+    }
+
+    &__heading {
+        display: grid;
+        gap: 0.15rem;
     }
 
     &__title {
-        font-family: var(--font-display);
-        font-size: 1.1rem;
         margin: 0;
-    }
-
-    &__actions {
-        display: flex;
-        gap: var(--s-2);
-    }
-
-    &__control {
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid var(--rule);
-        color: var(--bone-200);
-        padding: 0.4rem 0.8rem;
-        border-radius: var(--r-pill);
-        font-size: 0.75rem;
+        font-family: var(--font-display);
         font-weight: 500;
+        font-size: var(--fs-2xl);
+        letter-spacing: var(--ls-tight);
+        color: var(--bone-50);
+    }
+
+    &__count {
+        color: var(--bone-400);
+    }
+
+    &__actions-row {
+        display: flex;
+        align-items: center;
+        gap: var(--s-3);
+        flex-wrap: wrap;
+    }
+
+    &__controls {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--s-2);
+        background: var(--ink-700);
+        padding: var(--s-1);
+        border-radius: var(--r-pill);
+        box-shadow: inset 0 0 0 1px var(--rule);
+    }
+
+    &__nav {
+        all: unset;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
         cursor: pointer;
-        transition: all var(--dur-fast);
+        color: var(--bone-100);
+        transition: background-color var(--dur-fast) var(--ease-out);
 
         &:hover:not(:disabled) {
-            background: rgba(255, 255, 255, 0.06);
-            color: var(--bone-50);
-            border-color: var(--rule-strong);
+            background: var(--ember);
+            color: var(--ink-900);
         }
 
         &:disabled {
-            opacity: 0.4;
+            opacity: 0.35;
             cursor: not-allowed;
         }
-    }
 
-    &__grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-        gap: var(--s-2);
-        max-height: 240px;
-        overflow-y: auto;
-        padding-right: var(--s-2);
-
-        &::-webkit-scrollbar {
-            width: 4px;
-        }
-        &::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        &::-webkit-scrollbar-thumb {
-            background: var(--rule-strong);
-            border-radius: var(--r-pill);
+        svg {
+            width: 16px;
+            height: 16px;
         }
     }
 
-    &__btn {
-        aspect-ratio: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid var(--rule);
-        border-radius: var(--r-sm);
-        color: var(--bone-200);
+    &__current {
         font-family: var(--font-mono);
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all var(--dur-fast);
+        font-size: var(--fs-sm);
+        color: var(--bone-50);
+        padding: 0 var(--s-3);
+    }
+}
 
-        &:hover {
-            border-color: var(--rule-strong);
-            background: rgba(255, 255, 255, 0.04);
+.episode-search-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    background: var(--ink-700);
+    padding: 0.4rem 0.8rem;
+    border-radius: var(--r-md);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    max-width: 160px;
+
+    .search-hash {
+        color: var(--ember);
+        font-family: var(--font-mono);
+        font-weight: bold;
+        font-size: var(--fs-base);
+    }
+
+    .episode-search-input {
+        background: transparent;
+        border: none;
+        color: var(--bone-50);
+        font-family: var(--font-ui);
+        font-size: var(--fs-sm);
+        width: 100%;
+        outline: none;
+
+        &::placeholder {
+            color: var(--bone-500);
+        }
+    }
+}
+
+.episode-grid-container {
+    margin-top: var(--s-2);
+}
+
+.episode-squares-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: var(--s-2);
+    max-height: 480px;
+    overflow-y: auto;
+    padding-right: 4px;
+
+    &::-webkit-scrollbar {
+        width: 6px;
+    }
+    &::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    &::-webkit-scrollbar-thumb {
+        background: var(--rule-strong);
+        border-radius: var(--r-pill);
+    }
+}
+
+.ep-square {
+    all: unset;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ink-700);
+    border-radius: var(--r-sm);
+    box-shadow: inset 0 0 0 1px var(--rule);
+    cursor: pointer;
+    position: relative;
+    box-sizing: border-box;
+    transition: all var(--dur-fast) var(--ease-out);
+
+    &__number {
+        font-family: var(--font-mono);
+        font-size: var(--fs-base);
+        font-weight: 500;
+        color: var(--bone-200);
+    }
+
+    &:hover:not(.is-active) {
+        background: var(--ink-600);
+        box-shadow: inset 0 0 0 1px var(--rule-strong);
+        transform: scale(1.05);
+
+        .ep-square__number {
             color: var(--bone-50);
         }
+    }
 
-        &.is-active {
-            background: var(--ember);
-            border-color: var(--ember);
-            color: #000;
+    &.is-active {
+        background: var(--ember);
+        box-shadow: 0 0 12px var(--ember-glow);
+        transform: scale(1.05);
+
+        .ep-square__number {
+            color: var(--ink-950);
             font-weight: 700;
         }
     }
+
+    &__progress-dot {
+        position: absolute;
+        bottom: 6px;
+        right: 6px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--ember);
+        box-shadow: 0 0 6px var(--ember-glow);
+    }
+}
+
+.no-results {
+    text-align: center;
+    padding: var(--s-5);
+    color: var(--bone-400);
 }
 </style>

@@ -27,7 +27,8 @@ const TRACKED_ORIGINS: Record<string, string> = {
   '111movies.net': '111movies',
   'vsembed.ru': 'vidsrc',
   'anyembed.xyz': 'anyembed',
-  'animeplay.cfd': 'animeplay'
+  'animeplay.cfd': 'animeplay',
+  'megaplay.buzz': 'megaplay'
 };
 
 function parseMessage(raw: unknown): Record<string, unknown> | null {
@@ -123,7 +124,8 @@ function normalizeProgress(
       break;
     }
 
-    case 'animeplay': {
+    case 'animeplay':
+    case 'megaplay': {
       if (data.event === 'time') {
         const time = data.time as number | undefined;
         const duration = data.duration as number | undefined;

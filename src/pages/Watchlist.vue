@@ -92,7 +92,7 @@
                         :class="{ 'is-watched': item.watched }"
                     >
                         <router-link
-                            :to="item.type === 'tv' ? `/tv-show/${item.id}` : `/movie/${item.id}`"
+                            :to="item.type === 'anime' ? `/anime/${item.id}` : (item.type === 'tv' ? `/tv-show/${item.id}` : `/movie/${item.id}`)"
                             class="wl-card__poster"
                             :aria-label="item.title"
                         >
@@ -108,7 +108,7 @@
                             </div>
 
                             <div class="wl-card__badges">
-                                <span class="wl-card__type">{{ item.type === 'tv' ? 'Series' : 'Film' }}</span>
+                                <span class="wl-card__type">{{ item.type === 'anime' ? 'Anime' : (item.type === 'tv' ? 'Series' : 'Film') }}</span>
                                 <span v-if="item.rating" class="wl-card__rating">
                                     <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" aria-hidden="true">
                                         <path d="m12 2 3 7 7 .6-5.3 4.7 1.6 7L12 17.7 5.7 21.3l1.6-7L2 9.6 9 9z"/>
@@ -392,7 +392,7 @@ export default defineComponent({
                         rating: Number(x.rating) || 0,
                         categories: Array.isArray(x.categories) ? x.categories : [],
                         adult: !!x.adult,
-                        type: x.type === 'tv' ? 'tv' : 'movie',
+                        type: x.type === 'anime' ? 'anime' : (x.type === 'tv' ? 'tv' : 'movie'),
                         addedAt: typeof x.addedAt === 'number' ? x.addedAt : Date.now(),
                         watched: !!x.watched,
                         watchedAt: typeof x.watchedAt === 'number' ? x.watchedAt : undefined
@@ -467,7 +467,7 @@ function isValidItem(x: any): boolean {
         x &&
         (typeof x.id === 'number' || typeof x.id === 'string') &&
         typeof x.title === 'string' &&
-        (x.type === 'movie' || x.type === 'tv')
+        (x.type === 'movie' || x.type === 'tv' || x.type === 'anime')
     );
 }
 </script>

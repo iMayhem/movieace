@@ -253,6 +253,11 @@ export function useAniList() {
             id
             site
           }
+          nextAiringEpisode {
+            airingAt
+            timeUntilAiring
+            episode
+          }
         }
       }
     `;

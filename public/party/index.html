@@ -1196,7 +1196,9 @@
             if (isAnime) {
                 const animeServers = [
                     { id: 'animeplay_sub', name: 'AnimePlay CFD (Sub)' },
-                    { id: 'animeplay_dub', name: 'AnimePlay CFD (Dub)' }
+                    { id: 'animeplay_dub', name: 'AnimePlay CFD (Dub)' },
+                    { id: 'megaplay_sub', name: 'MegaPlay (Sub)' },
+                    { id: 'megaplay_dub', name: 'MegaPlay (Dub)' }
                 ];
                 menu.innerHTML = animeServers.map(srv => `
                     <button class="server-dropdown-item ${srv.id === activeProvider ? 'active' : ''}" onclick="switchStreamProvider('${srv.id}')">
@@ -1214,8 +1216,9 @@
 
         function getEmbedUrlForServer(srv, tmdbId, isTvShow, s, e) {
             if (isAnime) {
-                const lang = activeProvider === 'animeplay_dub' ? 'dub' : 'sub';
-                return `https://animeplay.cfd/stream/ani/${tmdbId}/${e}/${lang}`;
+                const lang = (activeProvider === 'animeplay_dub' || activeProvider === 'megaplay_dub') ? 'dub' : 'sub';
+                const domain = (activeProvider === 'megaplay_sub' || activeProvider === 'megaplay_dub') ? 'https://megaplay.buzz' : 'https://animeplay.cfd';
+                return `${domain}/stream/ani/${tmdbId}/${e}/${lang}`;
             }
             let template = isTvShow ? srv.tv : srv.movie;
             return template
@@ -1230,7 +1233,11 @@
 
             // Update trigger active text
             if (isAnime) {
-                const matchedName = providerId === 'animeplay_dub' ? 'AnimePlay CFD (Dub)' : 'AnimePlay CFD (Sub)';
+                const matchedName = providerId === 'animeplay_dub' ? 'AnimePlay CFD (Dub)' : (
+                    providerId === 'megaplay_sub' ? 'MegaPlay (Sub)' : (
+                        providerId === 'megaplay_dub' ? 'MegaPlay (Dub)' : 'AnimePlay CFD (Sub)'
+                    )
+                );
                 document.getElementById('active-server-name').textContent = matchedName;
                 populateServerDropdown();
 
