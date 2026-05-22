@@ -985,6 +985,20 @@
                         <iframe id="video-player-iframe" class="player-iframe" allowfullscreen allow="autoplay"></iframe>
                     </div>
 
+                    <!-- Autoplay and Navigation Controls -->
+                    <div class="player-controls-bar" style="margin-top: 1rem; display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.02); padding: 0.75rem 1rem; border-radius: var(--r-md); border: 1px solid var(--rule); display: none;">
+                        <div class="controls-left" style="display: flex; gap: 1rem;">
+                            <button id="party-auto-next-btn" class="btn" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(139, 92, 246, 0.4); color: var(--bone-200); padding: 0.4rem 0.85rem; border-radius: var(--r-pill); font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" onclick="togglePartyAutoNext()">
+                                <span class="indicator-dot" style="width: 8px; height: 8px; border-radius: 50%; background: var(--violet); box-shadow: 0 0 6px var(--violet); display: inline-block;"></span>
+                                AutoNext
+                            </button>
+                        </div>
+                        <div class="controls-right" style="display: flex; gap: 0.5rem;">
+                            <button id="party-prev-btn" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.75rem;" onclick="handlePrevEpisode()">Prev Ep</button>
+                            <button id="party-next-btn" class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size: 0.75rem;" onclick="handleNextEpisode()">Next Ep</button>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Right Column: Lobby Chat -->
@@ -1178,6 +1192,9 @@
             
             // Connect to real-time chat & presence channel
             connectToRealtimeRoom(room);
+            
+            // Update Controls visibility
+            updateControlsVisibility();
         }
 
         // Dropdown toggle logic
@@ -1266,6 +1283,82 @@
         // Lights Out toggler
         function toggleLightsOut() {
             document.body.classList.toggle('lights-out-mode');
+        }
+
+        // Watch Together Controls Helper methods
+        let partyAutoNext = true;
+
+        function togglePartyAutoNext() {
+            partyAutoNext = !partyAutoNext;
+            const dot = document.querySelector('#party-auto-next-btn .indicator-dot');
+            const btn = document.getElementById('party-auto-next-btn');
+            if (partyAutoNext) {
+                dot.style.background = 'var(--violet)';
+                dot.style.boxShadow = '0 0 6px var(--violet)';
+                btn.style.borderColor = 'rgba(139, 92, 246, 0.4)';
+            } else {
+                dot.style.background = '#6b7280';
+                dot.style.boxShadow = 'none';
+                btn.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+            }
+        }
+
+        function handlePrevEpisode() {
+            if (!isHost) {
+                alert('Only the party host can change episodes!');
+                return;
+            }
+            if (episode > 1) {
+                changePartyEpisode(episode - 1);
+            }
+        }
+
+        function handleNextEpisode() {
+            if (!isHost) {
+                alert('Only the party host can change episodes!');
+                return;
+            }
+            changePartyEpisode(episode + 1);
+        }
+
+        function changePartyEpisode(nextEp) {
+            episode = nextEp;
+            
+            // 1. Switch local iframe src
+            switchStreamProvider(activeProvider);
+
+            // 2. Update Supabase rooms record for late joiners
+            if (isHost && activeRoom) {
+                const nextSource = isAnime ? `anime_${mediaId}_ep${episode}` : `${mediaId}_s${season}e${episode}`;
+                supabaseClient
+                    .from('rooms')
+                    .update({ embed_sources: nextSource })
+                    .eq('id', activeRoom.id)
+                    .then(() => {});
+            }
+
+            // 3. Broadcast update to all room occupants
+            if (channel) {
+                channel.send({
+                    type: 'broadcast',
+                    event: 'next_episode',
+                    payload: { episode: episode }
+                });
+            }
+
+            appendChatMessage('System', `You advanced the watch party to Episode ${episode}!`, 'system');
+        }
+
+        function updateControlsVisibility() {
+            const controlsBar = document.querySelector('.player-controls-bar');
+            if (isAnime || isTv) {
+                controlsBar.style.display = 'flex';
+                document.getElementById('party-auto-next-btn').style.display = 'flex';
+                document.getElementById('party-prev-btn').style.display = 'inline-block';
+                document.getElementById('party-next-btn').style.display = 'inline-block';
+            } else {
+                controlsBar.style.display = 'none';
+            }
         }
 
         // Copy shared link
@@ -1399,6 +1492,12 @@
                 .on('broadcast', { event: 'chat' }, (payload) => {
                     appendChatMessage(payload.payload.user, payload.payload.message, 'other');
                 })
+                .on('broadcast', { event: 'next_episode' }, (payload) => {
+                    const nextEp = payload.payload.episode;
+                    episode = nextEp;
+                    switchStreamProvider(activeProvider);
+                    appendChatMessage('System', `The host advanced the watch party to Episode ${nextEp}!`, 'system');
+                })
                 .on('presence', { event: 'sync' }, () => {
                     const state = channel.presenceState();
                     updateUsersCount(state);
@@ -1471,6 +1570,25 @@
         // Page Init logic
         window.addEventListener('DOMContentLoaded', async () => {
             updateHeaderBadge();
+
+            // Listen for complete event from iframe players to advance episodes for social host
+            window.addEventListener('message', (event) => {
+                let data = event.data;
+                if (typeof data === 'string') {
+                    try {
+                        data = JSON.parse(data);
+                    } catch (e) {
+                        return;
+                    }
+                }
+                if (!data) return;
+
+                if (data.event === 'complete') {
+                    if (isHost && (isAnime || isTv) && partyAutoNext) {
+                        changePartyEpisode(episode + 1);
+                    }
+                }
+            });
 
             if (joinRoomId) {
                 // Check if it is a UUID (UUID validation regex)
