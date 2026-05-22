@@ -882,7 +882,7 @@
 
     <main>
         <!-- LOBBY VIEW -->
-        <section id="lobby-view" class="view active">
+        <section id="lobby-view" class="view">
             <div class="lobby-hero">
                 <h1>Watch Together</h1>
                 <p>Host or join interactive, synchronous movie sessions with real-time video sync & chat.</p>
@@ -1471,7 +1471,8 @@
                     }
                 }
             } else {
-                loadActiveRooms();
+                // No room parameter - show lobby
+                showLobbyView();
             }
         });
     </script>
