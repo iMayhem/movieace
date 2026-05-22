@@ -667,4 +667,29 @@ export default defineComponent({
         animation: none;
     }
 }
+
+/* Premium ArtPlayer UI Restyling & Tight Seek Bar */
+:deep(.art-video-player) {
+    .art-controls {
+        height: 46px !important;
+        background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.85) 100%) !important;
+        padding: 0 var(--s-3) !important;
+    }
+
+    .art-control-progress {
+        bottom: 42px !important; /* moves seek bar lower, closer to buttons */
+        height: 3px !important;
+        transition: height 0.15s ease, bottom 0.15s ease !important;
+
+        &:hover {
+            height: 6px !important;
+            bottom: 40px !important;
+        }
+    }
+
+    /* Subtitles margin bottom adjustment so they sit nicely above seek bar */
+    .art-subtitle {
+        bottom: 65px !important;
+    }
+}
 </style>
