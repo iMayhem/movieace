@@ -179,12 +179,13 @@ export default defineComponent({
     backdrop-filter: blur(8px);
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     padding: var(--s-4);
     overflow-y: auto;
 }
 
 .auth-modal {
+    margin: auto;
     width: 90%;
     max-width: 380px;
     max-height: calc(100vh - 2 * var(--s-4));
