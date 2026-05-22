@@ -3,7 +3,7 @@
 // unblocked residential IP address, completely bypassing datacenter IP geo-blocking.
 // This native implementation completely avoids importing Node.js SDK built-ins (fs, path).
 
-const API_BASE = 'https://h5.aoneroom.com';
+const API_BASE = 'https://proxy.moovie.fun/vps-proxy/https://h5.aoneroom.com';
 const PROXY = 'https://proxy.moovie.fun/';
 
 export interface MoovieStreamResponse {
