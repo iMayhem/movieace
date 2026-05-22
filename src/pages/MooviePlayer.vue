@@ -98,7 +98,7 @@ export default defineComponent({
                 const qualities = result.options.length > 1
                     ? result.options.map((opt, i) => ({
                         default: i === 0,
-                        name: opt.label,
+                        html: opt.label,
                         url: opt.url
                     }))
                     : [];
