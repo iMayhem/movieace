@@ -9,7 +9,7 @@
 
         <div class="stream-frame__stage">
             <div class="stream-frame__player">
-                <!-- If Moviebox Direct: Render premium native HTML5 player -->
+                <!-- If native provider: Render premium native HTML5 player -->
                 <div v-if="isNative && !resolveError" class="stream-frame__native-wrapper">
                     <div v-if="videoUrl" ref="artPlayerRef" class="stream-frame__artplayer" />
 
