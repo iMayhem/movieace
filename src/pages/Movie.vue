@@ -3,26 +3,28 @@
         <SiteHeader />
 
         <main v-if="movie" id="main" class="movie-detail__main" role="main">
-            <TitleMasthead
-                :id="movie.id"
-                type="movie"
-                :title="movie.title"
-                :tagline="movie.tagline"
-                :eyebrow="mastheadEyebrow"
-                :backdrop-path="movie.backdrop_path"
-                :poster-path="movie.poster_path"
-                :rating="movie.vote_average"
-                :release-date="movie.release_date"
-                :genres="genreNames"
-                :genre-ids="genreIds"
-                :adult="movie.adult"
-                :play-route="playRoute"
-                :play-label="playLabel"
-                :show-trailer="hasTrailer"
-                @trailer="openTrailer"
-            />
+            <section class="movie-detail__snap-slide">
+                <TitleMasthead
+                    :id="movie.id"
+                    type="movie"
+                    :title="movie.title"
+                    :tagline="movie.tagline"
+                    :eyebrow="mastheadEyebrow"
+                    :backdrop-path="movie.backdrop_path"
+                    :poster-path="movie.poster_path"
+                    :rating="movie.vote_average"
+                    :release-date="movie.release_date"
+                    :genres="genreNames"
+                    :genre-ids="genreIds"
+                    :adult="movie.adult"
+                    :play-route="playRoute"
+                    :play-label="playLabel"
+                    :show-trailer="hasTrailer"
+                    @trailer="openTrailer"
+                />
+            </section>
 
-            <section class="movie-detail__section container-lm movie-detail__opening">
+            <section class="movie-detail__section movie-detail__snap-slide container-lm movie-detail__opening">
                 <MetaBar :items="metaItems" aria-label="Film metadata" />
 
                 <div class="movie-detail__columns">
@@ -44,11 +46,11 @@
                 </div>
             </section>
 
-            <section v-if="cast.length" class="movie-detail__section container-lm">
+            <section v-if="cast.length" class="movie-detail__section movie-detail__snap-slide container-lm">
                 <CastGrid :casts="cast" title="The Players" eyebrow="The Cast" :limit="12" />
             </section>
 
-            <section v-if="reviews.length" class="movie-detail__section container-lm">
+            <section v-if="reviews.length" class="movie-detail__section movie-detail__snap-slide container-lm">
                 <ReviewsPullQuote
                     :reviews="reviews"
                     title="Pressed into print"
@@ -56,7 +58,7 @@
                 />
             </section>
 
-            <section v-if="similarItems.length" class="movie-detail__section">
+            <section v-if="similarItems.length" class="movie-detail__section movie-detail__snap-slide">
                 <CuratedRail
                     :items="similarItems"
                     title="Double bill"
@@ -378,15 +380,39 @@ export default defineComponent({
     background: var(--ink-900);
     color: var(--bone-50);
 
+    // Scroll snap container
+    height: 100dvh;
+    overflow-y: scroll;
+    scroll-snap-type: y proximity;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+
     &__main {
         position: relative;
     }
 
-    &__section {
-        margin-top: clamp(var(--s-7), 7vw, var(--s-10));
+    // Each snap slide
+    &__snap-slide {
+        scroll-snap-align: start;
+        scroll-snap-stop: normal;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        box-sizing: border-box;
 
+        // Metadata + synopsis slide: top-align with breathing room
+        &.movie-detail__opening {
+            justify-content: flex-start;
+            padding-top: clamp(var(--s-8), 8vh, var(--s-10));
+            padding-bottom: clamp(var(--s-8), 8vh, var(--s-10));
+        }
+    }
+
+    &__section {
         &:last-of-type {
-            margin-bottom: clamp(var(--s-8), 8vw, var(--s-10));
+            margin-bottom: 0;
         }
     }
 
