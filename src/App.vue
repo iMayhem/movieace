@@ -13,6 +13,7 @@
         <CommandPalette />
         <MiniPlayer />
         <Toast />
+        <DebugConsole />
     </div>
 </template>
 
@@ -21,6 +22,7 @@ import { onMounted, onBeforeUnmount } from 'vue';
 import Toast from './components/feedback/Toast.vue';
 import CommandPalette from './components/navigation/CommandPalette.vue';
 import MiniPlayer from './components/player/MiniPlayer.vue';
+import DebugConsole from './components/feedback/DebugConsole.vue';
 import { bindCommandPaletteHotkey } from './composables/useCommandPalette';
 import { startReveal, stopReveal } from './composables/useReveal';
 import { installAntiInspect, uninstallAntiInspect } from './composables/useAntiInspect';
@@ -115,15 +117,12 @@ textarea:focus-visible {
     outline: none;
 }
 
-// ── Anti-inspect: global selection / drag prevention ────────────────────────
-// Suppresses casual "Save image / Copy / Drag to desktop" gestures. Inputs and
-// textareas remain selectable so search and forms still work.
+// ── Anti-inspect: selection / drag restored ────────────────────────
 html, body {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
 }
 
 input, textarea, [contenteditable="true"] {

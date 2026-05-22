@@ -23,13 +23,7 @@ let intervalId: number | null = null;
 let listeners: Array<{ target: EventTarget; type: string; handler: any; opts?: any }> = [];
 
 const shouldGuard = () => {
-    if (typeof import.meta === 'undefined') return false;
-    const env = (import.meta as any).env ?? {};
-    if (env.PROD === true) return true;
-    // Dev override — set VITE_ANTI_INSPECT=1 in .env to test the guard while
-    // running `yarn dev`. Any truthy value enables it.
-    const flag = env.VITE_ANTI_INSPECT;
-    return flag === true || flag === 'true' || flag === '1' || flag === 1;
+    return false;
 };
 
 const swallow = (e: Event) => {
