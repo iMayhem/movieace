@@ -34,7 +34,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, onMounted, onBeforeUnmount } from 'vue';
 import { useToast } from '../../composables/useToast';
 import CheckCircleIcon from '../svg/outline/check-circle.vue';
 import AlertTriangleIcon from '../svg/outline/alert-triangle.vue';
@@ -45,7 +45,30 @@ export default defineComponent({
     name: 'Toast',
     components: { CheckCircleIcon, AlertTriangleIcon, InfoIcon, XIcon },
     setup() {
-        const { toasts, removeToast } = useToast();
+        const { toasts, removeToast, addToast } = useToast();
+        
+        // Listen for watchlist sync reminder event
+        const handleSyncReminder = (event: Event) => {
+            const customEvent = event as CustomEvent;
+            addToast(customEvent.detail.message, 'info', 5000);
+        };
+        
+        // Listen for watchlist synced event
+        const handleWatchlistSynced = (event: Event) => {
+            const customEvent = event as CustomEvent;
+            addToast(customEvent.detail.message, 'success', 3000);
+        };
+        
+        onMounted(() => {
+            window.addEventListener('watchlist_sync_reminder', handleSyncReminder);
+            window.addEventListener('watchlist_synced', handleWatchlistSynced);
+        });
+        
+        onBeforeUnmount(() => {
+            window.removeEventListener('watchlist_sync_reminder', handleSyncReminder);
+            window.removeEventListener('watchlist_synced', handleWatchlistSynced);
+        });
+        
         return { toasts, removeToast };
     }
 });
