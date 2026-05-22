@@ -67,39 +67,59 @@
             background-color: #000 !important;
         }
         
-        /* Dim the header in lights out mode */
+        /* Dim and push header off-screen in lights out mode to maximize vertical space */
         body.lights-out-mode header {
-            opacity: 0.05;
+            position: absolute;
+            width: 100%;
+            top: -65px;
+            opacity: 0;
             pointer-events: none;
-            transform: translateY(-5px);
-            transition: opacity 0.5s ease, transform 0.5s ease;
+            transition: top 0.3s ease, opacity 0.3s ease;
         }
         
         body.lights-out-mode header:hover {
+            top: 0;
             opacity: 1;
             pointer-events: auto;
-            transform: translateY(0);
         }
         
-        /* Hide controls in lights out mode, show on hover */
+        /* Collapse controls in lights out mode to maximize vertical height, restore on hover */
         body.lights-out-mode .workspace-header,
         body.lights-out-mode .workspace-banner {
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.3s ease;
+            height: 0;
+            margin: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            border-top: none !important;
+            border-bottom: none !important;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         body.lights-out-mode .workspace-header:hover,
         body.lights-out-mode .workspace-banner:hover {
             opacity: 1;
             pointer-events: auto;
+            height: auto;
+            margin-bottom: 0.75rem !important;
         }
         
-        /* Also show controls when hovering over the player container */
-        body.lights-out-mode .player-container:hover .workspace-header,
+        /* Restore fully on container hover */
+        body.lights-out-mode .player-container:hover .workspace-header {
+            opacity: 1;
+            pointer-events: auto;
+            height: auto;
+        }
         body.lights-out-mode .player-container:hover .workspace-banner {
             opacity: 1;
             pointer-events: auto;
+            height: auto;
+            padding-top: 0.6rem !important;
+            padding-bottom: 0.6rem !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
         }
 
         /* Glassmorphism Background */
@@ -864,6 +884,19 @@
         ::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.16);
         }
+
+        body.room-view-active main {
+            max-width: 100% !important;
+            padding: 0.5rem 1rem !important;
+        }
+        
+        body.room-view-active .room-workspace {
+            gap: 1rem;
+        }
+        
+        body.room-view-active .player-container {
+            gap: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -1181,7 +1214,7 @@
             
             // Select default provider and load iframe
             if (isAnime) {
-                activeProvider = 'videasy';
+                activeProvider = 'animeplay_sub';
             } else {
                 activeProvider = 'vidking';
             }
