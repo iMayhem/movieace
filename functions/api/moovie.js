@@ -122,7 +122,11 @@ export async function onRequest(context) {
 
   } catch (error) {
     console.error('Moovie function error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error while resolving stream' }), {
+    return new Response(JSON.stringify({ 
+      error: 'Internal server error while resolving stream',
+      message: error.message,
+      stack: error.stack
+    }), {
       status: 500,
       headers: corsHeaders
     });
