@@ -14,7 +14,7 @@ module.exports = {
     env: {
       NODE_ENV: 'production',
       PORT: 8080,
-      NGINX_PROXY_BASE: 'http://161.118.191.46'
+      NGINX_PROXY_BASE: 'https://api.moovie.fun'
     },
     error_file: './logs/error.log',
     out_file: './logs/out.log',
