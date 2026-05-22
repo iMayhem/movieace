@@ -668,13 +668,22 @@ export default defineComponent({
             padding: 0 var(--s-4);
         }
 
+        @media (min-width: 1024px) {
+            position: relative;
+            align-self: stretch;
+        }
+
         :deep(.server-accordion) {
             background: var(--ink-850);
             box-shadow: inset 0 0 0 1px var(--rule);
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            box-sizing: border-box;
+
+            @media (min-width: 1024px) {
+                position: absolute;
+                inset: 0;
+                display: flex;
+                flex-direction: column;
+                box-sizing: border-box;
+            }
         }
 
         :deep(.server-accordion__body) {
