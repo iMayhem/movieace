@@ -36,7 +36,6 @@
                         </svg>
                         <span class="button-text">Watch Together</span>
                     </a>
-                    <ShareScreen />
                 </div>
             </div>
         </header>
@@ -160,7 +159,6 @@ import StreamFrame from '../components/player/StreamFrame.vue';
 import ServerAccordion from '../components/player/ServerAccordion.vue';
 import EpisodeNavigator from '../components/player/EpisodeNavigator.vue';
 import UpNextDrawer from '../components/player/UpNextDrawer.vue';
-import ShareScreen from '../components/player/ShareScreen.vue';
 import ArrowLeft from '../components/svg/outline/arrow-left-long.vue';
 
 export default defineComponent({
@@ -170,7 +168,6 @@ export default defineComponent({
         ServerAccordion,
         EpisodeNavigator,
         UpNextDrawer,
-        ShareScreen,
         ArrowLeft
     },
     setup() {
@@ -633,40 +630,6 @@ export default defineComponent({
         align-items: center;
         gap: var(--s-2);
         justify-content: flex-end;
-
-        :deep(.share-screen-button) {
-            background: var(--surface-tint);
-            border: 0;
-            box-shadow: inset 0 0 0 1px var(--rule);
-            border-radius: var(--r-pill);
-            color: var(--bone-50);
-            padding: 0.5rem 1rem;
-            min-height: 38px;
-            font-family: var(--font-ui);
-            font-size: var(--fs-sm);
-            transition: background-color var(--dur-fast) var(--ease-out);
-
-            &:hover {
-                background: var(--surface-tint-hover);
-                box-shadow: inset 0 0 0 1px var(--rule-strong);
-            }
-        }
-
-        @media (max-width: 640px) {
-            gap: var(--s-1);
-
-            :deep(.share-screen-button .button-text) {
-                display: none;
-            }
-
-            :deep(.share-screen-button) {
-                width: 36px;
-                min-height: 36px;
-                padding: 0;
-                display: inline-grid;
-                place-items: center;
-            }
-        }
     }
 
     &__main {
