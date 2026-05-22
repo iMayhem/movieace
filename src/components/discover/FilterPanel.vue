@@ -75,15 +75,43 @@
                 <header class="filter-panel__row-head">
                     <p class="eyebrow filter-panel__row-label">Original language</p>
                 </header>
-                <div class="filter-panel__select-wrap">
-                    <select
-                        class="filter-panel__select"
-                        :value="filters.language"
-                        @change="onLanguageChange(($event.target as HTMLSelectElement).value)"
-                    >
-                        <option value="">Any language</option>
-                        <option v-for="l in languages" :key="l.code" :value="l.code">{{ l.label }}</option>
-                    </select>
+                <div class="custom-select-container">
+                    <div v-if="isLanguageOpen" class="custom-select-overlay" @click="isLanguageOpen = false"></div>
+                    <div class="custom-select">
+                        <button 
+                            type="button" 
+                            class="custom-select-trigger" 
+                            :class="{ 'is-open': isLanguageOpen }"
+                            @click="isLanguageOpen = !isLanguageOpen"
+                        >
+                            <span>{{ currentLanguageLabel }}</span>
+                            <svg class="custom-select-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m6 9 6 6 6-6"/>
+                            </svg>
+                        </button>
+                        <transition name="fade-slide">
+                            <div v-if="isLanguageOpen" class="custom-select-dropdown">
+                                <button 
+                                    type="button"
+                                    class="custom-select-option"
+                                    :class="{ 'is-selected': filters.language === '' }"
+                                    @click="selectLanguage(''); isLanguageOpen = false"
+                                >
+                                    Any language
+                                </button>
+                                <button 
+                                    v-for="l in languages" 
+                                    :key="l.code" 
+                                    type="button"
+                                    class="custom-select-option"
+                                    :class="{ 'is-selected': filters.language === l.code }"
+                                    @click="selectLanguage(l.code); isLanguageOpen = false"
+                                >
+                                    {{ l.label }}
+                                </button>
+                            </div>
+                        </transition>
+                    </div>
                 </div>
             </section>
 
@@ -91,14 +119,35 @@
                 <header class="filter-panel__row-head">
                     <p class="eyebrow filter-panel__row-label">Sort by</p>
                 </header>
-                <div class="filter-panel__select-wrap">
-                    <select
-                        class="filter-panel__select"
-                        :value="filters.sortBy"
-                        @change="onSortChange(($event.target as HTMLSelectElement).value)"
-                    >
-                        <option v-for="s in sortOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
-                    </select>
+                <div class="custom-select-container">
+                    <div v-if="isSortOpen" class="custom-select-overlay" @click="isSortOpen = false"></div>
+                    <div class="custom-select">
+                        <button 
+                            type="button" 
+                            class="custom-select-trigger" 
+                            :class="{ 'is-open': isSortOpen }"
+                            @click="isSortOpen = !isSortOpen"
+                        >
+                            <span>{{ currentSortLabel }}</span>
+                            <svg class="custom-select-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="m6 9 6 6 6-6"/>
+                            </svg>
+                        </button>
+                        <transition name="fade-slide">
+                            <div v-if="isSortOpen" class="custom-select-dropdown">
+                                <button 
+                                    v-for="s in sortOptions" 
+                                    :key="s.value" 
+                                    type="button"
+                                    class="custom-select-option"
+                                    :class="{ 'is-selected': filters.sortBy === s.value }"
+                                    @click="selectSort(s.value); isSortOpen = false"
+                                >
+                                    {{ s.label }}
+                                </button>
+                            </div>
+                        </transition>
+                    </div>
                 </div>
             </section>
         </div>
@@ -106,7 +155,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, PropType } from 'vue';
+import { computed, defineComponent, PropType, ref } from 'vue';
 import GenreChips from './GenreChips.vue';
 import YearRangeSlider from './YearRangeSlider.vue';
 import LmChip from '../primitives/Chip.vue';
@@ -229,6 +278,27 @@ export default defineComponent({
 
         const resetAll = () => emit('reset');
 
+        const isLanguageOpen = ref(false);
+        const isSortOpen = ref(false);
+
+        const currentLanguageLabel = computed(() => {
+            const found = languages.find(l => l.code === props.filters.language);
+            return found ? found.label : 'Any language';
+        });
+
+        const currentSortLabel = computed(() => {
+            const found = sortOptions.find(s => s.value === props.filters.sortBy);
+            return found ? found.label : '';
+        });
+
+        const selectLanguage = (code: string) => {
+            onLanguageChange(code);
+        };
+
+        const selectSort = (val: string) => {
+            onSortChange(val);
+        };
+
         return {
             ratingSteps,
             runtimeBands,
@@ -241,7 +311,13 @@ export default defineComponent({
             onRuntimeChange,
             onLanguageChange,
             onSortChange,
-            resetAll
+            resetAll,
+            isLanguageOpen,
+            isSortOpen,
+            currentLanguageLabel,
+            currentSortLabel,
+            selectLanguage,
+            selectSort
         };
     }
 });
@@ -377,40 +453,134 @@ export default defineComponent({
         gap: var(--s-2);
     }
 
-    &__select-wrap {
-        position: relative;
+}
 
-        &::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            right: 0.9rem;
-            width: 8px;
-            height: 8px;
-            border-right: 1.5px solid var(--bone-400);
-            border-bottom: 1.5px solid var(--bone-400);
-            transform: translateY(-70%) rotate(45deg);
-            pointer-events: none;
-        }
+.custom-select-container {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99;
+    background: transparent;
+    cursor: default;
+}
+
+.custom-select {
+    position: relative;
+    z-index: 100;
+    width: 100%;
+}
+
+.custom-select-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    font-family: var(--font-ui);
+    font-size: var(--fs-sm);
+    color: var(--bone-50);
+    background: var(--surface-tint);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-md);
+    padding: 0.65rem 1rem;
+    cursor: pointer;
+    text-align: left;
+    transition:
+        border-color var(--dur-fast) var(--ease-out),
+        background-color var(--dur-fast) var(--ease-out);
+
+    &:hover {
+        background: var(--surface-tint-hover);
+        border-color: rgba(255, 90, 31, 0.4);
     }
 
-    &__select {
-        width: 100%;
-        appearance: none;
-        font-family: var(--font-ui);
-        font-size: var(--fs-sm);
+    &.is-open {
+        border-color: var(--ember);
+        background: var(--surface-tint-hover);
+    }
+}
+
+.custom-select-chevron {
+    color: var(--bone-400);
+    transition: transform var(--dur-fast) var(--ease-out);
+    
+    .is-open & {
+        transform: rotate(180deg);
+        color: var(--ember);
+    }
+}
+
+.custom-select-dropdown {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    width: 100%;
+    max-height: 260px;
+    overflow-y: auto;
+    background: rgba(18, 18, 24, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-md);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 90, 31, 0.15);
+    padding: var(--s-1);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.custom-select-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+.custom-select-dropdown::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-select-dropdown::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
+}
+.custom-select-dropdown::-webkit-scrollbar-thumb:hover {
+    background: var(--ember);
+}
+
+.custom-select-option {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    font-family: var(--font-ui);
+    font-size: var(--fs-sm);
+    color: var(--bone-300);
+    background: transparent;
+    border: 0;
+    border-radius: var(--r-sm);
+    text-align: left;
+    cursor: pointer;
+    transition:
+        color var(--dur-fast) var(--ease-out),
+        background-color var(--dur-fast) var(--ease-out);
+
+    &:hover {
         color: var(--bone-50);
-        background: var(--surface-tint);
-        border: 1px solid var(--rule);
-        border-radius: var(--r-md);
-        padding: 0.65rem 2.25rem 0.65rem 0.85rem;
-        cursor: pointer;
-        transition:
-            border-color var(--dur-fast) var(--ease-out),
-            background-color var(--dur-fast) var(--ease-out);
-
-        &:hover { background: var(--surface-tint-hover); }
-        &:focus-visible { outline: none; border-color: var(--ember); }
+        background: rgba(255, 255, 255, 0.05);
     }
+
+    &.is-selected {
+        color: var(--ink-900);
+        background: var(--ember);
+        font-weight: 500;
+        box-shadow: 0 2px 10px rgba(255, 90, 31, 0.2);
+    }
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+    transition: opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+    opacity: 0;
+    transform: translateY(8px);
 }
 </style>

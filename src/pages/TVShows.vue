@@ -3,33 +3,6 @@
         <SiteHeader />
 
         <main id="main" class="discover__main" role="main">
-            <section class="discover__masthead container-lm">
-                <form class="discover__search" role="search" @submit.prevent>
-                    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
-                        <circle cx="11" cy="11" r="7"/>
-                        <path d="m20 20-3.5-3.5"/>
-                    </svg>
-                    <input
-                        type="search"
-                        class="discover__input"
-                        placeholder="Search shows by title"
-                        :value="searchTerm"
-                        aria-label="Search TV shows"
-                        @input="onSearchInput"
-                    />
-                    <button
-                        v-if="searchTerm"
-                        type="button"
-                        class="discover__clear"
-                        aria-label="Clear search"
-                        @click="clearSearch"
-                    >
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 6 6 18M6 6l12 12" stroke-linecap="round"/>
-                        </svg>
-                    </button>
-                </form>
-            </section>
 
             <section class="discover__body container-lm">
                 <FilterPanel

@@ -7,6 +7,21 @@
                     <span class="site-header__kicker eyebrow">A Cinema Periodical</span>
                 </div>
             </router-link>
+            
+            <!-- Dynamic Neon Theme/Vehicle Selector -->
+            <div class="vehicle-selector">
+                <button 
+                    v-for="v in vehicles" 
+                    :key="v.type" 
+                    @click="activeVehicle = v.type"
+                    class="vehicle-btn"
+                    :class="{ 'is-active': activeVehicle === v.type }"
+                    :title="`Active Theme: ${v.label}`"
+                >
+                    <span class="vehicle-icon">{{ v.emoji }}</span>
+                </button>
+            </div>
+
 
             <nav class="site-header__nav" aria-label="Primary">
                 <router-link
@@ -148,6 +163,7 @@ import LmDrawer from '../primitives/Drawer.vue';
 import AuthModal from './AuthModal.vue';
 import { openPalette } from '../../composables/useCommandPalette';
 import { getCurrentUser, logoutUser } from '../../lib/auth';
+import { useActiveVehicle } from '../../composables/useActiveVehicle';
 
 interface NavItem {
     label: string;
@@ -186,6 +202,15 @@ export default defineComponent({
         const route = useRoute();
         const scrolled = ref(false);
         const drawerOpen = ref(false);
+
+        const { activeVehicle } = useActiveVehicle();
+
+        const vehicles = [
+            { type: 'car' as const, emoji: '🚗', label: 'Sports Car' },
+            { type: 'plane' as const, emoji: '✈️', label: 'Jet Fighter' },
+            { type: 'boat' as const, emoji: '🚤', label: 'Speedboat' },
+            { type: 'superman' as const, emoji: '🦸', label: 'Superman' }
+        ];
 
         const isAuthModalOpen = ref(false);
         const currentUser = ref<string | null>(null);
@@ -234,7 +259,9 @@ export default defineComponent({
             openFromDrawer,
             isAuthModalOpen,
             currentUser,
-            handleLogout
+            handleLogout,
+            activeVehicle,
+            vehicles
         };
     }
 });
@@ -593,6 +620,47 @@ export default defineComponent({
             color: var(--ember);
             background: rgba(255, 90, 31, 0.08);
         }
+    }
+}
+
+.vehicle-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--r-pill);
+    padding: 3px 5px;
+    margin-left: var(--s-3);
+    z-index: 5;
+
+    @media (max-width: 768px) {
+        display: none; /* hide on smaller mobile header blocks to preserve space */
+    }
+}
+
+.vehicle-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    padding: 3px 6px;
+    border-radius: var(--r-pill);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--dur-fast), transform var(--dur-fast);
+    
+    &:hover {
+        background: rgba(255, 255, 255, 0.08);
+        transform: scale(1.15);
+    }
+    
+    &.is-active {
+        background: rgba(255, 90, 31, 0.16);
+        border: 1px solid rgba(255, 90, 31, 0.35);
+        box-shadow: 0 0 10px rgba(255, 90, 31, 0.25);
+        transform: scale(1.05);
     }
 }
 </style>
