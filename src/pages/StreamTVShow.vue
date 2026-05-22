@@ -656,16 +656,16 @@ export default defineComponent({
         margin: 0 auto;
         box-sizing: border-box;
 
-        // Snap slide 1: fill the viewport below the chrome header
+        // Snap slide 1: take full viewport height, push content below sticky header
         scroll-snap-align: start;
         scroll-snap-stop: always;
-        height: calc(100dvh - 72px);
-        align-content: center;
+        height: 100dvh;
+        padding-top: 72px; // clear the sticky chrome bar
 
         @media (min-width: 1024px) {
             grid-template-columns: 1fr 380px;
             align-items: stretch;
-            padding: 0 var(--s-5) var(--s-6) var(--s-5);
+            padding: 72px var(--s-5) var(--s-4) var(--s-5);
         }
     }
 
