@@ -28,31 +28,31 @@ const corsHeaders = {
   'Content-Type': 'application/json'
 };
 
-export default async (request, context) => {
+export const handler = async (event, context) => {
   // Handle CORS preflight
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: corsHeaders
+    };
   }
 
-  const url = new URL(request.url);
-  const title = url.searchParams.get('title');
-  const type = url.searchParams.get('type');
-  const season = url.searchParams.get('season') ? Number(url.searchParams.get('season')) : undefined;
-  const episode = url.searchParams.get('episode') ? Number(url.searchParams.get('episode')) : undefined;
-  const year = url.searchParams.get('year') ? Number(url.searchParams.get('year')) : undefined;
+  const { title, type, season, episode, year } = event.queryStringParameters || {};
 
   if (!title || !type) {
-    return new Response(
-      JSON.stringify({ error: 'Missing required parameters: title and type' }),
-      { status: 400, headers: corsHeaders }
-    );
+    return {
+      statusCode: 400,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Missing required parameters: title and type' })
+    };
   }
 
   if (type !== 'movie' && type !== 'tv') {
-    return new Response(
-      JSON.stringify({ error: 'Invalid type. Must be "movie" or "tv"' }),
-      { status: 400, headers: corsHeaders }
-    );
+    return {
+      statusCode: 400,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Invalid type. Must be "movie" or "tv"' })
+    };
   }
 
   try {
@@ -66,25 +66,27 @@ export default async (request, context) => {
     });
 
     if (!searchResults.results || searchResults.results.length === 0) {
-      return new Response(
-        JSON.stringify({ error: `No results found for "${title}"` }),
-        { status: 404, headers: corsHeaders }
-      );
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: `No results found for "${title}"` })
+      };
     }
 
     // Best match: prefer year match for movies, fallback to first result
     let matched = searchResults.results[0];
     if (type === 'movie' && year) {
-      const yearMatch = searchResults.results.find(r => r.releaseYear === year);
+      const yearMatch = searchResults.results.find(r => r.releaseYear === Number(year));
       if (yearMatch) matched = yearMatch;
     }
 
     const detailPath = matched.raw?.detailPath || matched.pageUrl;
     if (!detailPath) {
-      return new Response(
-        JSON.stringify({ error: 'No detail path found for matched title' }),
-        { status: 404, headers: corsHeaders }
-      );
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'No detail path found for matched title' })
+      };
     }
 
     console.log(`Moovie: matched "${matched.title}" → ${detailPath}`);
@@ -95,17 +97,18 @@ export default async (request, context) => {
     } else {
       streamResult = await getEpisodeStreamUrl(session, {
         detailPath,
-        season: season ?? 1,
-        episode: episode ?? 1,
+        season: season ? Number(season) : 1,
+        episode: episode ? Number(episode) : 1,
         quality: 'best'
       });
     }
 
     if (!streamResult || !streamResult.stream?.url) {
-      return new Response(
-        JSON.stringify({ error: 'No streaming resource found' }),
-        { status: 404, headers: corsHeaders }
-      );
+      return {
+        statusCode: 404,
+        headers: corsHeaders,
+        body: JSON.stringify({ error: 'No streaming resource found' })
+      };
     }
 
     // The raw CDN stream URL requires the proxy to play in the browser.
@@ -125,20 +128,18 @@ export default async (request, context) => {
       url: `${PROXY}${opt.url}`
     }));
 
-    return new Response(
-      JSON.stringify({ streamUrl: proxiedStreamUrl, subtitles, options }),
-      { status: 200, headers: corsHeaders }
-    );
+    return {
+      statusCode: 200,
+      headers: corsHeaders,
+      body: JSON.stringify({ streamUrl: proxiedStreamUrl, subtitles, options })
+    };
 
   } catch (error) {
     console.error('Moovie function error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error while resolving stream' }),
-      { status: 500, headers: corsHeaders }
-    );
+    return {
+      statusCode: 500,
+      headers: corsHeaders,
+      body: JSON.stringify({ error: 'Internal server error while resolving stream' })
+    };
   }
-};
-
-export const config = {
-  path: '/api/moovie'
 };
