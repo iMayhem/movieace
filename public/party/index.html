@@ -1186,6 +1186,22 @@
             document.body.classList.remove('room-view-active');
             document.body.classList.remove('lights-out-mode');
 
+            // Stop the video by clearing the iframe src
+            const iframe = document.getElementById('video-player-iframe');
+            if (iframe) {
+                iframe.src = '';
+            }
+
+            // Disconnect from realtime channel
+            if (channel) {
+                supabaseClient.removeChannel(channel);
+                channel = null;
+            }
+
+            // Reset room state
+            activeRoom = null;
+            isHost = false;
+
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById('lobby-view').classList.add('active');
             window.history.pushState({}, '', window.location.pathname);
