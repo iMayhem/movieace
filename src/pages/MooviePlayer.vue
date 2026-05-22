@@ -118,7 +118,6 @@ export default defineComponent({
                 art = new Artplayer({
                     container: artRef.value,
                     url: result.streamUrl,
-                    title: title,
                     volume: 1,
                     autoplay: true,
                     pip: true,
