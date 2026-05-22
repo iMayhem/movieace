@@ -12,6 +12,7 @@
     "@supabase/supabase-js": "^2.106.1",
     "@types/node": "^24.3.0",
     "@vueuse/core": "^13.1.0",
+    "artplayer": "^5.4.0",
     "axios": "^1.4.0",
     "lodash": "^4.17.21",
     "lodash.debounce": "^4.0.8",

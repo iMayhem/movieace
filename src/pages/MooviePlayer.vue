@@ -18,59 +18,19 @@
             <p class="moovie-player__error-body">{{ errorMessage }}</p>
         </div>
 
-        <!-- ── Player ──────────────────────────────────────────────────── -->
-        <template v-else-if="state === 'ready' && streamUrl">
+        <!-- ── ArtPlayer container ─────────────────────────────────────── -->
+        <div
+            v-show="state === 'ready'"
+            ref="artRef"
+            class="moovie-player__art"
+        />
 
-            <!-- Ambient bloom behind the video -->
-            <div class="moovie-player__bloom" aria-hidden="true" />
-
-            <video
-                ref="videoEl"
-                class="moovie-player__video"
-                controls
-                autoplay
-                playsinline
-                crossorigin="anonymous"
-                :src="streamUrl"
-                @error="onVideoError"
-            >
-                <track
-                    v-for="sub in subtitles"
-                    :key="sub.lang"
-                    kind="subtitles"
-                    :label="sub.label"
-                    :srclang="sub.lang"
-                    :src="sub.src"
-                />
-            </video>
-
-            <!-- Quality picker — only shown when multiple options exist -->
-            <div v-if="options.length > 1" class="moovie-player__quality">
-                <label class="moovie-player__quality-label eyebrow" for="quality-select">Quality</label>
-                <select
-                    id="quality-select"
-                    v-model="selectedQuality"
-                    class="moovie-player__quality-select"
-                    @change="switchQuality"
-                >
-                    <option v-for="opt in options" :key="opt.url" :value="opt.url">
-                        {{ opt.label }}
-                    </option>
-                </select>
-            </div>
-
-            <!-- Moovie badge -->
-            <div class="moovie-player__badge" aria-hidden="true">
-                <span class="moovie-player__badge-dot" />
-                moovie
-            </div>
-
-        </template>
     </div>
 </template>
 
 <script lang="ts">
 import { defineComponent, onMounted, onUnmounted, ref } from 'vue';
+import Artplayer from 'artplayer';
 import { getMoovieStream } from '../lib/moovie';
 
 type PlayerState = 'loading' | 'ready' | 'error';
@@ -86,12 +46,9 @@ export default defineComponent({
     name: 'MooviePlayer',
     setup() {
         const state = ref<PlayerState>('loading');
-        const streamUrl = ref<string>('');
-        const subtitles = ref<{ label: string; src: string; lang: string }[]>([]);
-        const options = ref<{ label: string; url: string }[]>([]);
-        const selectedQuality = ref<string>('');
-        const errorMessage = ref<string>('No stream found for this title.');
-        const videoEl = ref<HTMLVideoElement | null>(null);
+        const errorMessage = ref('No stream found for this title.');
+        const artRef = ref<HTMLElement | null>(null);
+        let art: Artplayer | null = null;
 
         const loadingLabel = ref(LOADING_MESSAGES[0]);
         let msgIdx = 0;
@@ -108,24 +65,10 @@ export default defineComponent({
             if (msgTimer) { clearInterval(msgTimer); msgTimer = null; }
         };
 
-        const onVideoError = () => {
-            state.value = 'error';
-            errorMessage.value = 'Failed to play the video stream. Try a different server.';
-        };
-
-        const switchQuality = () => {
-            if (!videoEl.value || !selectedQuality.value) return;
-            const currentTime = videoEl.value.currentTime;
-            const paused = videoEl.value.paused;
-            videoEl.value.src = selectedQuality.value;
-            videoEl.value.currentTime = currentTime;
-            if (!paused) videoEl.value.play();
-        };
-
         onMounted(async () => {
             startMessages();
 
-            const params = new URLSearchParams(window.location.search);
+            const params  = new URLSearchParams(window.location.search);
             const title   = params.get('title') || '';
             const type    = (params.get('type') || 'movie') as 'movie' | 'tv';
             const season  = params.get('season')  ? Number(params.get('season'))  : undefined;
@@ -149,11 +92,90 @@ export default defineComponent({
                     return;
                 }
 
-                streamUrl.value    = result.streamUrl;
-                subtitles.value    = result.subtitles;
-                options.value      = result.options;
-                selectedQuality.value = result.streamUrl;
                 state.value = 'ready';
+
+                // Build quality list for ArtPlayer
+                const qualities = result.options.length > 1
+                    ? result.options.map((opt, i) => ({
+                        default: i === 0,
+                        name: opt.label,
+                        url: opt.url
+                    }))
+                    : [];
+
+                // Build subtitle list
+                const subtitleList = result.subtitles.map((sub, i) => ({
+                    default: i === 0,
+                    name: sub.label,
+                    url: sub.src
+                }));
+
+                // Init ArtPlayer after DOM is ready
+                await new Promise(r => setTimeout(r, 50));
+
+                if (!artRef.value) return;
+
+                art = new Artplayer({
+                    container: artRef.value,
+                    url: result.streamUrl,
+                    title: title,
+                    volume: 1,
+                    autoplay: true,
+                    pip: true,
+                    autoSize: false,
+                    autoMini: false,
+                    screenshot: false,
+                    setting: true,
+                    loop: false,
+                    flip: false,
+                    playbackRate: true,
+                    aspectRatio: false,
+                    fullscreen: true,
+                    fullscreenWeb: true,
+                    subtitleOffset: true,
+                    miniProgressBar: true,
+                    mutex: true,
+                    backdrop: true,
+                    playsInline: true,
+                    autoPlayback: true,
+                    airplay: true,
+                    theme: '#ff5a1f',
+                    lang: navigator.language.toLowerCase(),
+                    moreVideoAttr: {
+                        crossOrigin: 'anonymous'
+                    },
+                    // Quality switching
+                    ...(qualities.length > 0 && {
+                        quality: qualities,
+                        setting: true
+                    }),
+                    // Subtitles
+                    ...(subtitleList.length > 0 && {
+                        subtitle: {
+                            url: subtitleList[0].url,
+                            type: 'vtt',
+                            style: {
+                                color: '#f5efe4',
+                                fontSize: '22px',
+                                fontFamily: "'General Sans', sans-serif",
+                                textShadow: '0 1px 4px rgba(0,0,0,0.9)',
+                                background: 'rgba(11,10,8,0.55)',
+                                padding: '2px 8px',
+                                borderRadius: '4px'
+                            },
+                            escape: false
+                        }
+                    }),
+                    icons: {
+                        loading: `<div class="art-loading-ring"></div>`
+                    }
+                });
+
+                art.on('error', () => {
+                    state.value = 'error';
+                    errorMessage.value = 'Failed to play the video stream. Try a different server.';
+                });
+
             } catch (err) {
                 stopMessages();
                 console.error('MooviePlayer error:', err);
@@ -162,13 +184,12 @@ export default defineComponent({
             }
         });
 
-        onUnmounted(stopMessages);
+        onUnmounted(() => {
+            stopMessages();
+            if (art) { art.destroy(true); art = null; }
+        });
 
-        return {
-            state, streamUrl, subtitles, options,
-            selectedQuality, errorMessage, loadingLabel,
-            videoEl, onVideoError, switchQuality
-        };
+        return { state, errorMessage, loadingLabel, artRef };
     }
 });
 </script>
@@ -183,20 +204,84 @@ export default defineComponent({
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    isolation: isolate;
 
-    // ── Ambient bloom ──────────────────────────────────────────────────────
-    &__bloom {
+    // ── ArtPlayer fills the whole viewport ────────────────────────────────
+    &__art {
         position: absolute;
-        inset: -20%;
-        background: radial-gradient(
-            ellipse at center,
-            rgba(var(--ambient), 0.12) 0%,
-            transparent 65%
-        );
-        z-index: -1;
-        pointer-events: none;
-        animation: bloomPulse 6s ease-in-out infinite alternate;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+
+        // Override ArtPlayer theme to match our design system
+        :deep(.art-video-player) {
+            font-family: var(--font-ui);
+            background: #000;
+        }
+
+        :deep(.art-bottom) {
+            background: linear-gradient(
+                0deg,
+                rgba(11, 10, 8, 0.92) 0%,
+                rgba(11, 10, 8, 0.4) 70%,
+                transparent 100%
+            );
+            padding-bottom: var(--s-3);
+        }
+
+        :deep(.art-progress-bar) {
+            background: rgba(245, 239, 228, 0.15);
+        }
+
+        :deep(.art-progress-played) {
+            background: var(--ember);
+        }
+
+        :deep(.art-progress-highlight) {
+            background: var(--ember-600);
+        }
+
+        :deep(.art-control-progress) {
+            .art-progress-tip {
+                background: var(--ink-800);
+                border: 1px solid var(--rule-strong);
+                color: var(--bone-50);
+                font-family: var(--font-ui);
+                font-size: var(--fs-xs);
+                border-radius: var(--r-sm);
+            }
+        }
+
+        :deep(.art-icon) {
+            color: var(--bone-50);
+            transition: color var(--dur-fast) var(--ease-out),
+                        transform var(--dur-fast) var(--ease-out);
+
+            &:hover {
+                color: var(--ember);
+                transform: scale(1.1);
+            }
+        }
+
+        :deep(.art-setting-panel) {
+            background: rgba(11, 10, 8, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--rule-strong);
+            border-radius: var(--r-lg);
+            font-family: var(--font-ui);
+            color: var(--bone-50);
+        }
+
+        :deep(.art-setting-item:hover) {
+            background: var(--surface-tint-hover);
+        }
+
+        :deep(.art-setting-item-right-icon svg) {
+            color: var(--ember);
+        }
+
+        :deep(.art-subtitle) {
+            bottom: 60px;
+        }
     }
 
     // ── Loading ────────────────────────────────────────────────────────────
@@ -207,7 +292,6 @@ export default defineComponent({
         gap: var(--s-5);
     }
 
-    // Film reel spinner — three concentric rings
     &__reel {
         position: relative;
         width: 56px;
@@ -234,7 +318,8 @@ export default defineComponent({
 
     &__reel-hub {
         position: absolute;
-        inset: 50%;
+        top: 50%;
+        left: 50%;
         transform: translate(-50%, -50%);
         width: 10px;
         height: 10px;
@@ -272,6 +357,7 @@ export default defineComponent({
         color: var(--bone-50);
         margin: 0;
         letter-spacing: var(--ls-tight);
+        font-variation-settings: 'opsz' 72, 'SOFT' 50;
     }
 
     &__error-body {
@@ -280,109 +366,25 @@ export default defineComponent({
         max-width: 32ch;
         margin: 0;
     }
-
-    // ── Video ──────────────────────────────────────────────────────────────
-    &__video {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        background: #000;
-    }
-
-    // ── Quality picker ─────────────────────────────────────────────────────
-    &__quality {
-        position: absolute;
-        top: var(--s-4);
-        right: var(--s-4);
-        z-index: 10;
-        display: flex;
-        align-items: center;
-        gap: var(--s-2);
-        background: rgba(11, 10, 8, 0.75);
-        backdrop-filter: blur(12px);
-        border: 1px solid var(--rule-strong);
-        border-radius: var(--r-pill);
-        padding: var(--s-1) var(--s-3);
-        opacity: 0;
-        transition: opacity var(--dur-base) var(--ease-out);
-    }
-
-    // Show quality picker on hover over the player
-    &:hover &__quality {
-        opacity: 1;
-    }
-
-    &__quality-label {
-        color: var(--bone-400);
-        font-size: var(--fs-xs);
-        white-space: nowrap;
-    }
-
-    &__quality-select {
-        background: transparent;
-        border: none;
-        color: var(--bone-50);
-        font-family: var(--font-ui);
-        font-size: var(--fs-sm);
-        font-weight: 500;
-        cursor: pointer;
-        outline: none;
-
-        option {
-            background: var(--ink-800);
-            color: var(--bone-50);
-        }
-    }
-
-    // ── Moovie badge ───────────────────────────────────────────────────────
-    &__badge {
-        position: absolute;
-        bottom: var(--s-4);
-        left: var(--s-4);
-        z-index: 10;
-        display: inline-flex;
-        align-items: center;
-        gap: var(--s-2);
-        font-family: var(--font-display);
-        font-size: var(--fs-sm);
-        font-weight: 500;
-        color: var(--bone-400);
-        letter-spacing: var(--ls-snug);
-        opacity: 0;
-        transition: opacity var(--dur-base) var(--ease-out);
-        pointer-events: none;
-        font-variation-settings: 'opsz' 72, 'SOFT' 50;
-    }
-
-    &:hover &__badge {
-        opacity: 1;
-    }
-
-    &__badge-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: var(--ember);
-        box-shadow: 0 0 8px var(--ember-glow);
-        flex-shrink: 0;
-    }
 }
 
-// ── Animations ───────────────────────────────────────────────────────────────
+// ArtPlayer custom loading ring (injected via icons.loading)
+:global(.art-loading-ring) {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid rgba(245, 239, 228, 0.1);
+    border-top-color: #ff5a1f;
+    animation: reelSpin 1s linear infinite;
+}
+
 @keyframes reelSpin {
     to { transform: rotate(360deg); }
 }
 
-@keyframes bloomPulse {
-    from { opacity: 0.6; transform: scale(1); }
-    to   { opacity: 1;   transform: scale(1.08); }
-}
-
 @media (prefers-reduced-motion: reduce) {
     .moovie-player__reel-ring,
-    .moovie-player__bloom {
+    :global(.art-loading-ring) {
         animation: none;
     }
 }
