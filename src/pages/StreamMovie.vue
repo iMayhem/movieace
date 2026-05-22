@@ -261,10 +261,17 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .watch-stage {
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
     background: var(--ink-900);
     color: var(--bone-50);
+
+    // Hide scrollbar visually but keep it functional
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
 
     &__chrome {
         position: sticky;
@@ -397,8 +404,7 @@ export default defineComponent({
 
     &__main {
         display: grid;
-        gap: var(--s-7);
-        padding-bottom: var(--s-9);
+        gap: 0;
     }
 
     &__theater {
@@ -408,6 +414,12 @@ export default defineComponent({
         width: 100%;
         margin: 0 auto;
         box-sizing: border-box;
+
+        // Snap slide 1: fill the viewport below the chrome header
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        height: calc(100dvh - 72px);
+        align-content: center;
 
         @media (min-width: 1024px) {
             grid-template-columns: 1fr 380px;
@@ -491,16 +503,23 @@ export default defineComponent({
     }
 
     &__feature {
+        // Snap slide 2: full viewport, content centered
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        height: 100dvh;
+        display: grid;
+        align-content: center;
+        padding: 0 var(--s-4);
+        gap: var(--s-6);
         max-width: 1280px;
         margin: 0 auto;
-        padding: 0 var(--s-4);
-        display: grid;
-        gap: var(--s-6);
+        width: 100%;
+        box-sizing: border-box;
 
         @media (min-width: 768px) {
             padding: 0 var(--s-5);
             grid-template-columns: 280px 1fr;
-            align-items: start;
+            align-items: center;
         }
     }
 
