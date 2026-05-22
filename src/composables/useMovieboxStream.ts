@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import { getMovieboxStream, type MovieboxStreamResponse } from '@/lib/moviebox';
+import { getMovieboxStream, type MovieboxStreamResponse } from '../lib/moviebox';
 
 export interface MovieboxStreamParams {
   title: string;
