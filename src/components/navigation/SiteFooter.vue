@@ -133,7 +133,7 @@ export default defineComponent({
 .site-footer {
     position: relative;
     padding: var(--s-10) 0 var(--s-7);
-    background: var(--ink-850);
+    background: var(--ink-900);
     border-top: 1px solid var(--rule);
     color: var(--bone-200);
     overflow: hidden;
@@ -189,9 +189,9 @@ export default defineComponent({
         display: inline-flex;
         align-items: center;
         gap: var(--s-2);
-        color: var(--bone-400);
+        color: var(--bone-300);
 
-        .eyebrow { color: var(--bone-400); }
+        .eyebrow { color: var(--bone-300); }
     }
 
     &__sep {
@@ -264,7 +264,7 @@ export default defineComponent({
     }
 
     &__col-title {
-        color: var(--bone-400);
+        color: var(--bone-300);
         margin-bottom: var(--s-4);
     }
 
@@ -321,7 +321,7 @@ export default defineComponent({
         display: flex;
         align-items: center;
         gap: var(--s-3);
-        color: var(--bone-400);
+        color: var(--bone-300);
         flex-wrap: wrap;
 
         a { color: inherit; }
