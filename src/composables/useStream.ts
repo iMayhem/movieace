@@ -15,6 +15,7 @@ interface StreamData {
 export interface Server {
   name: string;
   urlTemplate: string;
+  isApiProvider?: boolean; // Flag for providers that need API calls instead of direct URLs
 }
 
 const defaultStreamData: StreamData = {
@@ -24,6 +25,7 @@ const defaultStreamData: StreamData = {
 export const streamData = useStorage<StreamData>('streamData', defaultStreamData);
 
 export const movieServers = ref<Server[]>([
+  { name: 'Moviebox', urlTemplate: 'moviebox', isApiProvider: true },
   { name: 'VidKing', urlTemplate: 'https://www.vidking.net/embed/movie/{tmdbId}?autoPlay=true' },
   { name: 'VidEasy', urlTemplate: 'https://player.videasy.net/movie/{tmdbId}?color=#4eb5ff' },
   { name: 'Cinemaos', urlTemplate: 'https://cinemaos.tech/player/{tmdbId}' },
@@ -41,6 +43,7 @@ export const movieServers = ref<Server[]>([
 ]);
 
 export const tvServers = ref<Server[]>([
+  { name: 'Moviebox', urlTemplate: 'moviebox', isApiProvider: true },
   { name: 'VidKing', urlTemplate: 'https://www.vidking.net/embed/tv/{externalId}/{season}/{episode}?autoPlay=true&nextEpisode=true&episodeSelector=true' },
   { name: 'VidEasy', urlTemplate: 'https://player.videasy.net/tv/{externalId}/{season}/{episode}?color=#4eb5ff&nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true' },
   { name: 'Cinemaos', urlTemplate: 'https://cinemaos.tech/player/{externalId}/{season}/{episode}' },
@@ -158,7 +161,9 @@ export function buildStreamUrl(
   serverIndex: number = 0,
   season: number = 1,
   episode: number = 1,
-  timestamp?: number
+  timestamp?: number,
+  movieTitle?: string,
+  year?: number
 ): string {
   const id = String(mediaId);
   const servers = getServers(type);
@@ -169,6 +174,27 @@ export function buildStreamUrl(
   }
 
   const server = servers[serverIndex] || servers[0];
+  
+  // Handle Moviebox API provider specially
+  if (server.isApiProvider && server.urlTemplate === 'moviebox') {
+    const params = new URLSearchParams({
+      title: movieTitle || '',
+      type: type
+    });
+    
+    if (type === 'tv') {
+      params.append('season', String(season));
+      params.append('episode', String(episode));
+    }
+    
+    if (year) {
+      params.append('year', String(year));
+    }
+    
+    return `/moviebox-player?${params.toString()}`;
+  }
+  
+  // Handle regular URL template providers
   let url: string;
 
   if (type === 'movie') {

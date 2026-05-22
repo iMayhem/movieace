@@ -219,7 +219,9 @@ export default defineComponent({
                 currentStreamData.value.currentServer,
                 currentSeason.value,
                 currentEpisode.value,
-                ts
+                ts,
+                show.value?.name,
+                show.value?.first_air_date ? new Date(show.value.first_air_date).getFullYear() : undefined
             );
         });
 

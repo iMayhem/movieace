@@ -148,7 +148,9 @@ export default defineComponent({
                 currentStreamData.value.currentServer,
                 1,
                 1,
-                ts
+                ts,
+                movie.value?.title,
+                movie.value?.release_date ? new Date(movie.value.release_date).getFullYear() : undefined
             );
             if (reloadKey.value > 0) {
                 return `${base}${base.includes('?') ? '&' : '?'}t=${reloadKey.value}`;

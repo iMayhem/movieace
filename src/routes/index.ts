@@ -120,6 +120,15 @@ const routes: Array<RouteRecordRaw> = [
             title: 'Stream TV Show'
         }
     },
+    {
+        path: '/moviebox-player',
+        name: 'MovieboxPlayer',
+        component: () => import('../pages/MovieboxPlayer.vue'),
+        meta: {
+            showInHeader: false,
+            title: 'Moviebox Player'
+        }
+    },
 ];
 
 const router = createRouter({
