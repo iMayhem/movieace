@@ -1,6 +1,6 @@
 import { MovieboxSession, search, getMovieStreamUrl, getEpisodeStreamUrl } from 'moviebox-js-sdk';
 
-const PROXY = 'http://161.118.191.46:8080/';
+const PROXY = 'https://proxy.moovie.fun/';
 
 const session = new MovieboxSession({
   host: 'h5.aoneroom.com',
