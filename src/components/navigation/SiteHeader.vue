@@ -77,16 +77,14 @@
                 </a>
 
                 <!-- User Session Controls -->
-                <div v-if="currentUser" class="site-header__user-badge">
+                <button v-if="currentUser" class="site-header__user-badge" @click="handleLogout" title="Sign Out">
                     <span class="site-header__username">{{ currentUser }}</span>
-                    <button @click="handleLogout" class="site-header__logout-btn" title="Sign Out">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                            <polyline points="16 17 21 12 16 7" />
-                            <line x1="21" y1="12" x2="9" y2="12" />
-                        </svg>
-                    </button>
-                </div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="site-header__logout-icon">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <polyline points="16 17 21 12 16 7" />
+                        <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                </button>
                 <button
                     v-else
                     @click="isAuthModalOpen = true"
@@ -590,6 +588,14 @@ export default defineComponent({
         background: var(--surface-tint);
         border: 1px solid var(--rule);
         border-radius: var(--r-sm);
+        cursor: pointer;
+        transition: all var(--dur-fast) var(--ease-out);
+
+        &:hover {
+            background: var(--surface-tint-hover);
+            border-color: var(--rule-strong);
+            transform: translateY(-1px);
+        }
     }
 
     &__username {
@@ -597,6 +603,17 @@ export default defineComponent({
         font-family: var(--font-ui);
         font-size: var(--fs-xs);
         font-weight: 600;
+    }
+
+    &__logout-icon {
+        width: 14px;
+        height: 14px;
+        color: var(--bone-400);
+        transition: color var(--dur-fast);
+
+        .site-header__user-badge:hover & {
+            color: var(--ember);
+        }
     }
 
     &__logout-btn {
