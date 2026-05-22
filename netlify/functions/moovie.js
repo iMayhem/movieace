@@ -1,4 +1,4 @@
-import { MovieboxSession, search, getMovieStreamUrl, getEpisodeStreamUrl } from 'moviebox-js-sdk';
+const { MovieboxSession, search, getMovieStreamUrl, getEpisodeStreamUrl } = require('moviebox-js-sdk');
 
 const PROXY = 'https://proxy.moovie.fun/';
 
@@ -28,7 +28,7 @@ const corsHeaders = {
   'Content-Type': 'application/json'
 };
 
-export const handler = async (event, context) => {
+exports.handler = async (event, context) => {
   // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
