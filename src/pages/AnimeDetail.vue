@@ -52,7 +52,7 @@
 
                     <div class="episode-guide__grid">
                         <router-link
-                            v-for="ep in episodesList"
+                            v-for="ep in paginatedEpisodesList"
                             :key="ep"
                             :to="`/stream/anime/${anime.id}/episode/${ep}`"
                             class="episode-card"
@@ -70,6 +70,34 @@
                                 <p class="episode-card__subtitle">{{ truncate(getEpisodeOverview(ep), 90) }}</p>
                             </div>
                         </router-link>
+                    </div>
+
+                    <div class="episode-guide__pagination">
+                        <button 
+                            @click="currentPage > 1 ? currentPage-- : null"
+                            :disabled="currentPage === 1"
+                            class="pagination-btn"
+                            aria-label="Previous Page"
+                        >
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                                <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                            </svg>
+                            Prev
+                        </button>
+                        <span class="pagination-info">
+                            Showing {{ (currentPage - 1) * 20 + 1 }}–{{ Math.min(currentPage * 20, totalEpisodesCount) }} of {{ totalEpisodesCount }} episodes
+                        </span>
+                        <button 
+                            @click="currentPage < totalPages ? currentPage++ : null"
+                            :disabled="currentPage === totalPages"
+                            class="pagination-btn"
+                            aria-label="Next Page"
+                        >
+                            Next
+                            <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                                <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </section>
@@ -170,6 +198,28 @@ export default defineComponent({
             return `/stream/anime/${anime.value?.id}/episode/1`;
         });
 
+        const currentPage = ref(1);
+        const episodesPerPage = 20;
+
+        const totalEpisodesCount = computed(() => {
+            return anime.value?.episodes || 1;
+        });
+
+        const totalPages = computed(() => {
+            return Math.ceil(totalEpisodesCount.value / episodesPerPage);
+        });
+
+        const paginatedEpisodesList = computed(() => {
+            const startIndex = (currentPage.value - 1) * episodesPerPage;
+            const endIndex = startIndex + episodesPerPage;
+            
+            const list: number[] = [];
+            for (let i = startIndex + 1; i <= Math.min(endIndex, totalEpisodesCount.value); i++) {
+                list.push(i);
+            }
+            return list;
+        });
+
         const tmdbEpisodes = ref<any[]>([]);
 
         const loadTmdbEpisodes = async (englishTitle: string, romajiTitle: string, year?: number) => {
@@ -240,6 +290,7 @@ export default defineComponent({
         const loadAnime = async (id: number) => {
             loading.value = true;
             anime.value = null;
+            currentPage.value = 1;
 
             try {
                 const response = await fetchAnimeById(id);
@@ -300,7 +351,11 @@ export default defineComponent({
             getEpisodeStill,
             getEpisodeTitle,
             getEpisodeOverview,
-            truncate
+            truncate,
+            currentPage,
+            totalEpisodesCount,
+            totalPages,
+            paginatedEpisodesList
         };
     }
 });
@@ -479,6 +534,55 @@ export default defineComponent({
         color: var(--bone-450);
         margin-top: var(--s-1);
         margin-bottom: 0;
+    }
+}
+
+.episode-guide__pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-4);
+    margin-top: var(--s-8);
+    padding-top: var(--s-6);
+    border-top: 1px solid var(--rule);
+
+    .pagination-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--s-1);
+        background: var(--ink-800);
+        border: 1px solid var(--rule);
+        color: var(--bone-100);
+        padding: var(--s-2) var(--s-4);
+        border-radius: var(--r-md);
+        font-family: var(--font-ui);
+        font-weight: 500;
+        font-size: var(--fs-sm);
+        cursor: pointer;
+        transition: background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out), opacity var(--dur-fast);
+
+        &:hover:not(:disabled) {
+            background: var(--surface-tint);
+            border-color: var(--ember);
+            color: var(--ember);
+        }
+
+        &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        svg {
+            display: inline-block;
+        }
+    }
+
+    .pagination-info {
+        font-family: var(--font-mono);
+        font-size: var(--fs-xs);
+        color: var(--bone-400);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
     }
 }
 </style>

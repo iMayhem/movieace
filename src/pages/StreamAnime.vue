@@ -57,7 +57,7 @@
 
                 <div class="watch-stage__aside">
                     <!-- Premium Dub / Sub Switcher styled exactly as standard components -->
-                    <div class="language-switcher">
+                    <div v-if="availableServers[activeServerIndex]?.name !== 'Videasy'" class="language-switcher">
                         <p class="eyebrow language-switcher__header">Language Pref</p>
                         <div class="language-switcher__tabs">
                             <button
@@ -245,6 +245,7 @@ export default defineComponent({
         const searchQuery = ref<string>('');
 
         const availableServers: Server[] = [
+            { name: 'Videasy', urlTemplate: 'https://player.videasy.net/anime/{id}/{episode}?color=E05A47&autoplayNextEpisode=true&overlay=true' },
             { name: 'AnimePlay CFD', urlTemplate: 'https://animeplay.cfd/stream/ani/{id}/{episode}/{lang}' },
             { name: 'MegaPlay', urlTemplate: 'https://megaplay.buzz/stream/ani/{id}/{episode}/{lang}' }
         ];
@@ -320,7 +321,16 @@ export default defineComponent({
         const currentEmbedUrl = computed(() => {
             const server = availableServers[activeServerIndex.value];
             const malId = anime.value?.idMal ? String(anime.value.idMal) : String(animeId.value);
-            return server.urlTemplate
+            
+            let template = server.urlTemplate;
+            if (server.name === 'Videasy') {
+                const isMovie = anime.value?.format === 'MOVIE' || totalEpisodes.value === 1;
+                template = isMovie
+                    ? 'https://player.videasy.net/anime/{id}?color=E05A47&autoplayNextEpisode=true&overlay=true'
+                    : 'https://player.videasy.net/anime/{id}/{episode}?color=E05A47&autoplayNextEpisode=true&overlay=true';
+            }
+
+            return template
                 .replace('{id}', String(animeId.value))
                 .replace('{malId}', malId)
                 .replace('{episode}', String(currentEpisode.value))
@@ -395,6 +405,16 @@ export default defineComponent({
                 }
             }
             if (!data) return;
+
+            // Handle Videasy progress tracking
+            if (data.timestamp !== undefined && data.duration !== undefined) {
+                saveProgress(animeId.value, 'anime', Number(data.timestamp), Number(data.duration), undefined, currentEpisode.value);
+            }
+
+            // Sync current episode from player if it auto-advances
+            if (data.episode !== undefined && Number(data.episode) !== currentEpisode.value) {
+                goToEpisode(Number(data.episode));
+            }
 
             // Handle watch progress saving
             if (data.event === 'time' && data.time !== undefined && data.duration !== undefined) {

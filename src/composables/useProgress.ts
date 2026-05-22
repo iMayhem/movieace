@@ -68,6 +68,9 @@ function normalizeProgress(
     }
 
     case 'videasy': {
+      if (data.timestamp !== undefined && data.duration !== undefined) {
+        return { watched: Number(data.timestamp), duration: Number(data.duration) };
+      }
       if (data.type === 'MEDIA_DATA') {
         const d = data.data as Record<string, unknown> | undefined;
         if (d) {

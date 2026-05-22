@@ -1181,7 +1181,7 @@
             
             // Select default provider and load iframe
             if (isAnime) {
-                activeProvider = 'animeplay_sub';
+                activeProvider = 'videasy';
             } else {
                 activeProvider = 'vidking';
             }
@@ -1212,6 +1212,7 @@
             const menu = document.getElementById('server-dropdown-menu');
             if (isAnime) {
                 const animeServers = [
+                    { id: 'videasy', name: 'VidEasy (Sub/Dub)' },
                     { id: 'animeplay_sub', name: 'AnimePlay CFD (Sub)' },
                     { id: 'animeplay_dub', name: 'AnimePlay CFD (Dub)' },
                     { id: 'megaplay_sub', name: 'MegaPlay (Sub)' },
@@ -1233,6 +1234,13 @@
 
         function getEmbedUrlForServer(srv, tmdbId, isTvShow, s, e) {
             if (isAnime) {
+                if (activeProvider === 'videasy') {
+                    // Check if anime is movie or series in rooms record
+                    const isAnimeMovie = !activeRoom?.embed_sources?.includes('_ep');
+                    return isAnimeMovie
+                        ? `https://player.videasy.net/anime/${tmdbId}?color=E05A47&autoplayNextEpisode=true&overlay=true`
+                        : `https://player.videasy.net/anime/${tmdbId}/${e}?color=E05A47&autoplayNextEpisode=true&overlay=true`;
+                }
                 const lang = (activeProvider === 'animeplay_dub' || activeProvider === 'megaplay_dub') ? 'dub' : 'sub';
                 const domain = (activeProvider === 'megaplay_sub' || activeProvider === 'megaplay_dub') ? 'https://megaplay.buzz' : 'https://animeplay.cfd';
                 return `${domain}/stream/ani/${tmdbId}/${e}/${lang}`;
@@ -1250,9 +1258,11 @@
 
             // Update trigger active text
             if (isAnime) {
-                const matchedName = providerId === 'animeplay_dub' ? 'AnimePlay CFD (Dub)' : (
-                    providerId === 'megaplay_sub' ? 'MegaPlay (Sub)' : (
-                        providerId === 'megaplay_dub' ? 'MegaPlay (Dub)' : 'AnimePlay CFD (Sub)'
+                const matchedName = providerId === 'videasy' ? 'VidEasy (Sub/Dub)' : (
+                    providerId === 'animeplay_dub' ? 'AnimePlay CFD (Dub)' : (
+                        providerId === 'megaplay_sub' ? 'MegaPlay (Sub)' : (
+                            providerId === 'megaplay_dub' ? 'MegaPlay (Dub)' : 'AnimePlay CFD (Sub)'
+                        )
                     )
                 );
                 document.getElementById('active-server-name').textContent = matchedName;
