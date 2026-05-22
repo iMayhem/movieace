@@ -103,7 +103,10 @@ export default defineComponent({
             const path = props.backdropPath || props.posterPath;
             if (!path) return '';
             const size = props.backdropPath ? 'w1280' : 'w780';
-            return `${IMAGE_BASEURL}${size}${path}`;
+            const tmdbUrl = `${IMAGE_BASEURL}${size}${path}`;
+            const width = props.backdropPath ? 1280 : 780;
+            // Use wsrv.nl for optimization
+            return `https://wsrv.nl/?url=${encodeURIComponent(tmdbUrl)}&w=${width}&output=webp&q=85`;
         });
 
         const year = computed(() =>

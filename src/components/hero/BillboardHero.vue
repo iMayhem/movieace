@@ -135,9 +135,12 @@ export default defineComponent({
         const ambientPath = computed(() => props.backdropPath || props.posterPath);
         useAmbientColor(ambientPath, rootRef);
 
-        const backdropUrl = computed(() =>
-            props.backdropPath ? `${IMAGE_BASEURL}original${props.backdropPath}` : ''
-        );
+        const backdropUrl = computed(() => {
+            if (!props.backdropPath) return '';
+            const tmdbUrl = `${IMAGE_BASEURL}w1280${props.backdropPath}`;
+            // Use wsrv.nl for optimization: WebP format, 1280px width, 85% quality
+            return `https://wsrv.nl/?url=${encodeURIComponent(tmdbUrl)}&w=1280&output=webp&q=85`;
+        });
 
         const year = computed(() =>
             props.releaseDate ? new Date(props.releaseDate).getFullYear() : null
