@@ -25,30 +25,7 @@
         </div>
       </div>
 
-      <!-- Quick Test Runner -->
-      <div class="debug-tester">
-        <h4 class="debug-tester__heading">Run On-the-Fly Stream Test</h4>
-        <div class="debug-tester__row">
-          <input 
-            v-model="testTitle" 
-            type="text" 
-            placeholder="Movie/Show Title (e.g. Avatar)" 
-            class="debug-input"
-            @keyup.enter="runDiagnosticTest"
-          />
-          <select v-model="testType" class="debug-select">
-            <option value="movie">Movie</option>
-            <option value="tv">TV Show</option>
-          </select>
-          <button 
-            @click="runDiagnosticTest" 
-            class="debug-btn debug-btn--primary"
-            :disabled="isTesting"
-          >
-            {{ isTesting ? 'Testing...' : 'Test Stream' }}
-          </button>
-        </div>
-      </div>
+
 
       <!-- Logs Viewport -->
       <div class="debug-viewport" ref="viewportRef">
@@ -72,7 +49,6 @@
 
 <script lang="ts">
 import { defineComponent, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
-import { getMoovieStream } from '../../lib/moovie';
 
 interface LogEntry {
   time: string;
@@ -87,11 +63,6 @@ export default defineComponent({
     const logs = ref<LogEntry[]>([]);
     const hasNewErrors = ref(false);
     const viewportRef = ref<HTMLDivElement | null>(null);
-
-    // Test input states
-    const testTitle = ref('Avatar');
-    const testType = ref<'movie' | 'tv'>('movie');
-    const isTesting = ref(false);
 
     // Capture standard console calls
     let originalLog: typeof console.log;
@@ -126,45 +97,6 @@ export default defineComponent({
       hasNewErrors.value = false;
     };
 
-    const runDiagnosticTest = async () => {
-      if (!testTitle.value.trim() || isTesting.value) return;
-      isTesting.value = true;
-      
-      addLog('info', [`[DEBUG WIDGET] Initiating diagnostic test for "${testTitle.value}" (${testType.value})...`]);
-      
-      try {
-        const start = performance.now();
-        const result = await getMoovieStream({
-          title: testTitle.value,
-          type: testType.value
-        });
-        const duration = ((performance.now() - start) / 1000).toFixed(2);
-
-        if (result && result.streamUrl) {
-          addLog('success', [
-            `[DEBUG WIDGET] SUCCESS in ${duration}s! Stream resolved!`,
-            `Stream URL: ${result.streamUrl}`,
-            `Subtitles Count: ${result.subtitles.length}`,
-            `Subtitles: ${JSON.stringify(result.subtitles, null, 2)}`,
-            `Quality Options: ${JSON.stringify(result.options, null, 2)}`
-          ]);
-        } else {
-          addLog('error', [
-            `[DEBUG WIDGET] FAILED in ${duration}s! No streaming resource resolved.`,
-            `Make sure this movie has active uploads on Moviebox.`
-          ]);
-        }
-      } catch (err: any) {
-        addLog('error', [
-          `[DEBUG WIDGET] Diagnostic test threw exception:`,
-          err.message,
-          err.stack
-        ]);
-      } finally {
-        isTesting.value = false;
-      }
-    };
-
     onMounted(() => {
       // Hijack console logs beautifully
       originalLog = console.log;
@@ -173,9 +105,7 @@ export default defineComponent({
 
       console.log = (...args) => {
         originalLog.apply(console, args);
-        // Identify success logs by tag
-        const isSuccess = args.some(arg => typeof arg === 'string' && arg.includes('[Moovie] Stream successfully resolved'));
-        addLog(isSuccess ? 'success' : 'info', args);
+        addLog('info', args);
       };
 
       console.warn = (...args) => {
@@ -214,11 +144,7 @@ export default defineComponent({
       logs,
       hasNewErrors,
       viewportRef,
-      testTitle,
-      testType,
-      isTesting,
-      clearLogs,
-      runDiagnosticTest
+      clearLogs
     };
   }
 });

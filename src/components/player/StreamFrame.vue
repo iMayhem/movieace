@@ -1,5 +1,5 @@
 <template>
-    <div ref="rootRef" class="stream-frame" :class="{ 'is-loading': isLoading, 'has-error': hasError }">
+    <div ref="rootRef" class="stream-frame" :class="{ 'is-loading': isLoading || isResolving, 'has-error': hasError || !!resolveError }">
         <div
             v-if="ambientImage"
             class="stream-frame__bloom"
@@ -9,8 +9,54 @@
 
         <div class="stream-frame__stage">
             <div class="stream-frame__player">
+                <!-- If Moviebox Direct: Render premium native HTML5 player -->
+                <div v-if="isNative && !resolveError" class="stream-frame__native-wrapper">
+                    <video
+                        v-if="videoUrl"
+                        ref="videoEl"
+                        :src="videoUrl"
+                        controls
+                        autoplay
+                        crossorigin="anonymous"
+                        class="stream-frame__video"
+                    >
+                        <track
+                            v-for="sub in subtitles"
+                            :key="sub.src"
+                            kind="subtitles"
+                            :label="sub.label"
+                            :src="sub.src"
+                            :srclang="sub.srclang"
+                            :default="sub.default"
+                        />
+                    </video>
+                    
+                    <!-- Premium Settings / Resolution Selection Overlay -->
+                    <div v-if="videoUrl && resolutions.length > 1" class="stream-frame__settings-bar">
+                        <span class="meta">Cinema Direct</span>
+                        <div class="stream-frame__selector">
+                            <label for="resolution-select">Quality:</label>
+                            <select id="resolution-select" v-model="videoUrl" @change="onResolutionChange">
+                                <option v-for="res in resolutions" :key="res.url" :value="res.url">
+                                    {{ res.label }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Custom Loader for Direct API resolution -->
+                    <div v-if="isResolving" class="stream-frame__loading" role="status" aria-live="polite">
+                        <div class="stream-frame__skeleton" aria-hidden="true" />
+                        <div class="stream-frame__loader">
+                            <div class="stream-frame__spinner" aria-hidden="true" />
+                            <p class="meta">Striking the high-performance print…</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- If not Moviebox Direct: Render standard iframe -->
                 <iframe
-                    v-if="embedUrl && !hasError"
+                    v-else-if="embedUrl && !isNative && !hasError"
                     ref="frameEl"
                     :src="embedUrl"
                     :title="title"
@@ -22,7 +68,8 @@
                     @error="onError"
                 />
 
-                <div v-if="isLoading && !hasError" class="stream-frame__loading" role="status" aria-live="polite">
+                <!-- General loading states -->
+                <div v-if="isLoading && !isNative && !hasError" class="stream-frame__loading" role="status" aria-live="polite">
                     <div class="stream-frame__skeleton" aria-hidden="true" />
                     <div class="stream-frame__loader">
                         <div class="stream-frame__spinner" aria-hidden="true" />
@@ -30,13 +77,22 @@
                     </div>
                 </div>
 
-                <div v-if="hasError" class="stream-frame__error" role="alert">
+                <!-- Iframe Error -->
+                <div v-if="hasError && !isNative" class="stream-frame__error" role="alert">
                     <p class="eyebrow">Reel jam</p>
                     <h3>The frame didn't catch.</h3>
                     <p class="stream-frame__error-message">
                         Try a different server below, or reload this projector.
                     </p>
                     <button type="button" class="stream-frame__retry" @click="retry">Reload</button>
+                </div>
+
+                <!-- Native Resolve Error -->
+                <div v-if="resolveError" class="stream-frame__error" role="alert">
+                    <p class="eyebrow">Projector Fault</p>
+                    <h3>Unable to strike direct stream.</h3>
+                    <p class="stream-frame__error-message">{{ resolveError }}</p>
+                    <button type="button" class="stream-frame__retry" @click="resolveStream">Retry</button>
                 </div>
             </div>
         </div>
@@ -64,8 +120,17 @@ export default defineComponent({
     setup(props) {
         const rootRef = ref<HTMLElement | null>(null);
         const frameEl = ref<HTMLIFrameElement | null>(null);
+        const videoEl = ref<HTMLVideoElement | null>(null);
         const isLoading = ref(true);
         const hasError = ref(false);
+
+        // Native streaming states
+        const isNative = computed(() => props.embedUrl && props.embedUrl.startsWith('http://161.118.191.46'));
+        const videoUrl = ref('');
+        const subtitles = ref<Array<{ label: string; src: string; srclang: string; default: boolean }>>([]);
+        const resolutions = ref<Array<{ label: string; url: string }>>([]);
+        const isResolving = ref(false);
+        const resolveError = ref('');
 
         const ambientPath = computed(() => props.backdropPath || props.posterPath || null);
         useAmbientColor(ambientPath, rootRef);
@@ -144,14 +209,96 @@ export default defineComponent({
             }
         };
 
+        // Resolves Moviebox dynamic stream links
+        const resolveStream = async () => {
+            if (!isNative.value) return;
+
+            isResolving.value = true;
+            resolveError.value = '';
+            videoUrl.value = '';
+            subtitles.value = [];
+            resolutions.value = [];
+
+            try {
+                const type = props.mediaType;
+                const titleEnc = encodeURIComponent(props.title);
+
+                // Step 1: Search VPS API to get the correct Moviebox subject ID and detailPath
+                const searchUrl = `http://161.118.191.46/vps-proxy/search?q=${titleEnc}&type=${type === 'movie' ? 'movie' : 'tv'}`;
+                const searchRes = await fetch(searchUrl);
+                if (!searchRes.ok) throw new Error('Metadata resolver is currently offline');
+                
+                const searchData = await searchRes.json();
+                const item = searchData.results?.[0];
+                if (!item) throw new Error('No matching streaming source found on Moviebox Direct');
+
+                const detailPath = item.raw?.detailPath || item.pageUrl;
+                const subjectId = item.id;
+
+                // Step 2: Resolve stream options and subtitles
+                const resolveUrl = `http://161.118.191.46/vps-proxy/resolve?detailPath=${encodeURIComponent(detailPath)}&id=${subjectId}&type=${type}&season=${props.season}&episode=${props.episode}`;
+                const resolveRes = await fetch(resolveUrl);
+                if (!resolveRes.ok) throw new Error('Failed to resolve media stream URLs');
+
+                const resolveData = await resolveRes.json();
+                if (!resolveData.stream && (!resolveData.options || resolveData.options.length === 0)) {
+                    throw new Error('Streaming resource is currently offline for this item');
+                }
+
+                // Format stream options
+                const streamOptions = resolveData.options || [];
+                resolutions.value = streamOptions.map((opt: any) => ({
+                    label: `${opt.quality}p (${opt.format.toUpperCase()})`,
+                    url: opt.url
+                }));
+
+                const defaultStream = resolveData.stream || streamOptions[0];
+                videoUrl.value = defaultStream.url;
+
+                // Subtitles options mapping
+                const captionOptions = resolveData.captions || [];
+                subtitles.value = captionOptions.map((sub: any, idx: number) => ({
+                    label: sub.language,
+                    src: sub.url,
+                    srclang: sub.languageCode || 'en',
+                    default: idx === 0 || sub.language.toLowerCase() === 'english'
+                }));
+
+            } catch (err: any) {
+                resolveError.value = err.message || 'Failed to strike print';
+                console.error('[STREAM_RESOLVER_ERROR]', err);
+            } finally {
+                isResolving.value = false;
+                isLoading.value = false;
+            }
+        };
+
+        const onResolutionChange = (event: Event) => {
+            const select = event.target as HTMLSelectElement;
+            videoUrl.value = select.value;
+        };
+
         watch(
             () => props.embedUrl,
             (next, prev) => {
                 if (next && next !== prev) {
-                    isLoading.value = true;
-                    hasError.value = false;
-                    startMessages();
+                    if (isNative.value) {
+                        resolveStream();
+                    } else {
+                        isLoading.value = true;
+                        hasError.value = false;
+                        startMessages();
+                    }
                     startTrackingIfNeeded();
+                }
+            }
+        );
+
+        watch(
+            () => [props.season, props.episode],
+            () => {
+                if (isNative.value) {
+                    resolveStream();
                 }
             }
         );
@@ -163,11 +310,15 @@ export default defineComponent({
         );
 
         onMounted(() => {
-            startMessages();
+            if (isNative.value) {
+                resolveStream();
+            } else {
+                startMessages();
+                window.setTimeout(() => {
+                    if (isLoading.value) onLoad();
+                }, 15000);
+            }
             startTrackingIfNeeded();
-            window.setTimeout(() => {
-                if (isLoading.value) onLoad();
-            }, 15000);
         });
 
         onUnmounted(() => {
@@ -181,13 +332,22 @@ export default defineComponent({
         return {
             rootRef,
             frameEl,
+            videoEl,
             isLoading,
             hasError,
             loadingLabel,
             ambientImage,
+            isNative,
+            videoUrl,
+            subtitles,
+            resolutions,
+            isResolving,
+            resolveError,
             onLoad,
             onError,
-            retry
+            retry,
+            resolveStream,
+            onResolutionChange
         };
     }
 });
@@ -247,6 +407,88 @@ export default defineComponent({
         transition: box-shadow var(--dur-slow) var(--ease-out);
     }
 
+    &__native-wrapper {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: #000;
+    }
+
+    &__video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #000;
+
+        &::cue {
+            background: rgba(11, 10, 8, 0.85);
+            color: var(--bone-50);
+            font-family: var(--font-ui);
+            font-size: var(--fs-lg);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+            border-radius: var(--r-md);
+        }
+    }
+
+    &__settings-bar {
+        position: absolute;
+        bottom: 50px;
+        right: var(--s-4);
+        display: flex;
+        align-items: center;
+        gap: var(--s-3);
+        background: rgba(11, 10, 8, 0.85);
+        backdrop-filter: blur(8px);
+        padding: 0.5rem 0.85rem;
+        border-radius: var(--r-pill);
+        box-shadow: inset 0 0 0 1px var(--rule);
+        z-index: 10;
+        pointer-events: auto;
+        opacity: 0;
+        transition: opacity var(--dur-fast) var(--ease-out);
+
+        .stream-frame__player:hover & {
+            opacity: 1;
+        }
+
+        .meta {
+            color: var(--bone-400);
+            font-weight: 600;
+            font-size: var(--fs-xs);
+            letter-spacing: var(--ls-micro);
+            text-transform: uppercase;
+        }
+    }
+
+    &__selector {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--bone-100);
+        font-family: var(--font-ui);
+        font-size: var(--fs-sm);
+
+        select {
+            background: var(--surface-tint);
+            border: 1px solid var(--rule-strong);
+            color: var(--bone-50);
+            font-size: var(--fs-xs);
+            font-weight: 600;
+            border-radius: var(--r-md);
+            padding: 2px 6px;
+            cursor: pointer;
+            outline: none;
+            transition: background var(--dur-fast) var(--ease-out);
+
+            &:hover {
+                background: var(--surface-tint-hover);
+            }
+        }
+    }
+
     &__iframe {
         position: absolute;
         inset: 0;
@@ -261,6 +503,7 @@ export default defineComponent({
         display: grid;
         place-items: center;
         background: var(--ink-900);
+        z-index: 5;
     }
 
     &__skeleton {
@@ -304,6 +547,7 @@ export default defineComponent({
         text-align: center;
         padding: var(--s-6);
         background: var(--ink-900);
+        z-index: 5;
 
         h3 {
             font-family: var(--font-display);

@@ -192,7 +192,7 @@ ps aux | grep nginx
 ### Check Node.js proxy status
 ```bash
 pm2 list
-pm2 logs moviebox-proxy
+pm2 logs moovie-proxy
 ```
 
 ### Check SSL certificate expiry
@@ -228,6 +228,6 @@ curl -I https://proxy.moovie.fun/https://example.com
 
 If you encounter issues:
 1. Check nginx logs: `sudo tail -f /var/log/nginx/error.log`
-2. Check proxy logs: `pm2 logs moviebox-proxy`
+2. Check proxy logs: `pm2 logs moovie-proxy`
 3. Verify DNS: `dig proxy.moovie.fun`
 4. Test SSL: `openssl s_client -connect proxy.moovie.fun:443`

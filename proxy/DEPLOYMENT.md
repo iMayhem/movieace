@@ -9,7 +9,7 @@
 ## What Was Done
 
 ### 1. Started Node.js Proxy
-- Using existing `/home/opc/moviebox-proxy/server.js`
+- Using existing `/home/opc/moovie-proxy/server.js`
 - Running on port 8080 via PM2 process manager
 - Handles the `/https://target-url` proxy pattern
 - Auto-restarts on crashes, survives server reboots
@@ -39,17 +39,17 @@ ssh -i ~/key/ssh-key4.key opc@161.118.191.46 "pm2 resurrect"
 
 ### Stop proxy
 ```bash
-ssh -i ~/key/ssh-key4.key opc@161.118.191.46 "pm2 stop moviebox-proxy"
+ssh -i ~/key/ssh-key4.key opc@161.118.191.46 "pm2 stop moovie-proxy"
 ```
 
 ### Restart proxy
 ```bash
-ssh -i ~/key/ssh-key4.key opc@161.118.191.46 "pm2 restart moviebox-proxy"
+ssh -i ~/key/ssh-key4.key opc@161.118.191.46 "pm2 restart moovie-proxy"
 ```
 
 ### View logs
 ```bash
-ssh -i ~/key/ssh-key4.key opc@161.118.191.46 "pm2 logs moviebox-proxy"
+ssh -i ~/key/ssh-key4.key opc@161.118.191.46 "pm2 logs moovie-proxy"
 ```
 
 ### View real-time stats
@@ -67,7 +67,7 @@ curl -I "http://161.118.191.46:8080/https://h5.aoneroom.com/"
 
 ## Why Node.js Instead of Nginx?
 
-The moviebox-js-sdk uses a pattern like `PROXY + originalUrl` which creates URLs like:
+The moovie bff resolver uses a pattern like `PROXY + originalUrl` which creates URLs like:
 ```
 http://161.118.191.46:8080/https://h5.aoneroom.com/api/search
 ```
@@ -90,7 +90,7 @@ Once we migrate to a cleaner URL pattern (like `/api/proxy?url=...`), we can swi
 ## Files Modified
 
 - `netlify/functions/moovie.mjs` - Changed PROXY to port 8080
-- Server: PM2 managing `/home/opc/moviebox-proxy/server.js`
+- Server: PM2 managing `/home/opc/moovie-proxy/server.js`
 
 ## Status: ✅ COMPLETE
 

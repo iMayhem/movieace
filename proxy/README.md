@@ -81,5 +81,5 @@ with zero Node.js overhead. For a 1080p movie (~6GB), Nginx uses ~5MB RAM
 and <1% CPU per stream. Node.js would use ~200MB RAM and 10-20% CPU.
 
 If you want zero bandwidth usage on your server, the only option is to get
-Moviebox to whitelist your domain as a trusted referer — which requires
+the API provider to whitelist your domain as a trusted referer — which requires
 contacting them directly.

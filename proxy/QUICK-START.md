@@ -66,7 +66,7 @@ sudo /tmp/setup-ssl.sh
 ### Movie still not playing
 ```bash
 # Check proxy logs
-pm2 logs moviebox-proxy
+pm2 logs moovie-proxy
 
 # Check nginx logs
 sudo tail -f /var/log/nginx/error.log
@@ -80,13 +80,13 @@ pm2 list
 ps aux | grep nginx
 
 # Restart proxy
-pm2 restart moviebox-proxy
+pm2 restart moovie-proxy
 
 # Restart nginx
 sudo pkill nginx && sudo /usr/sbin/nginx
 
 # View logs
-pm2 logs moviebox-proxy
+pm2 logs moovie-proxy
 sudo tail -f /var/log/nginx/proxy_access.log
 ```
 

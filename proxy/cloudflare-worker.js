@@ -40,19 +40,13 @@ export default {
     newHeaders.delete('cf-ray');
     newHeaders.delete('cf-visitor');
     
-    const isCdn = targetUrlStr.includes('hakunaymatata.com') || targetUrlStr.includes('bcdnxw.') || targetUrlStr.includes('cacdn.');
-    
-    if (isCdn) {
-      newHeaders.set('Referer', 'https://moviebox.pk');
-      newHeaders.set('Origin', 'https://moviebox.pk');
-    } else {
-      newHeaders.set('Origin', 'https://h5.aoneroom.com');
-      const originalReferer = request.headers.get('referer');
-      if (originalReferer && !originalReferer.includes(url.host)) {
-        newHeaders.set('Referer', originalReferer);
-      } else {
-        newHeaders.set('Referer', 'https://h5.aoneroom.com');
-      }
+    const originalReferer = request.headers.get('referer');
+    if (originalReferer && !originalReferer.includes(url.host)) {
+      newHeaders.set('Referer', originalReferer);
+    }
+    const originalOrigin = request.headers.get('origin');
+    if (originalOrigin) {
+      newHeaders.set('Origin', originalOrigin);
     }
 
     // 4. Fetch the target URL and pipe it back

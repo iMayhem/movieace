@@ -120,15 +120,6 @@ const routes: Array<RouteRecordRaw> = [
             title: 'Stream TV Show'
         }
     },
-    {
-        path: '/moovie-player',
-        name: 'MooviePlayer',
-        component: () => import('../pages/MooviePlayer.vue'),
-        meta: {
-            showInHeader: false,
-            title: 'Moovie Player'
-        }
-    },
 ];
 
 const router = createRouter({
