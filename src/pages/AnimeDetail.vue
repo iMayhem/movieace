@@ -58,7 +58,7 @@
                             class="episode-card"
                         >
                             <div class="episode-card__image-container">
-                                <img :src="anime.coverImage.large" class="episode-card__image" alt="Episode Cover" />
+                                <img :src="getEpisodeStill(ep)" class="episode-card__image" alt="Episode Cover" loading="lazy" />
                                 <div class="episode-card__play">
                                     <svg viewBox="0 0 24 24" fill="currentColor">
                                         <path d="M8 5v14l11-7z"/>
@@ -66,8 +66,8 @@
                                 </div>
                             </div>
                             <div class="episode-card__meta">
-                                <h4 class="episode-card__title">Episode {{ ep }}</h4>
-                                <p class="episode-card__subtitle">Sub/Dub available</p>
+                                <h4 class="episode-card__title">Episode {{ ep }} · {{ getEpisodeTitle(ep) }}</h4>
+                                <p class="episode-card__subtitle">{{ truncate(getEpisodeOverview(ep), 90) }}</p>
                             </div>
                         </router-link>
                     </div>
@@ -99,6 +99,7 @@ import DropCapSynopsis from '../components/detail/DropCapSynopsis.vue';
 import StatsBlock, { StatEntry } from '../components/detail/StatsBlock.vue';
 import { useAniList } from '../composables/useAniList';
 import { addViewedItem } from '../composables/useHistory';
+import useAxios from '../composables/useAxios';
 
 export default defineComponent({
     name: 'AnimeDetail',
@@ -169,6 +170,73 @@ export default defineComponent({
             return `/stream/anime/${anime.value?.id}/episode/1`;
         });
 
+        const tmdbEpisodes = ref<any[]>([]);
+
+        const loadTmdbEpisodes = async (englishTitle: string, romajiTitle: string, year?: number) => {
+            tmdbEpisodes.value = [];
+            try {
+                let show = null;
+                const yearParam = year ? `&first_air_date_year=${year}` : '';
+                
+                // Try English Title first
+                if (englishTitle) {
+                    const searchRes = await useAxios().get(
+                        `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(englishTitle)}${yearParam}`
+                    );
+                    show = searchRes?.data?.results?.[0];
+                }
+                
+                // Fallback to Romaji Title
+                if (!show && romajiTitle) {
+                    const searchRes = await useAxios().get(
+                        `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(romajiTitle)}${yearParam}`
+                    );
+                    show = searchRes?.data?.results?.[0];
+                }
+                
+                if (show) {
+                    const seasonRes = await useAxios().get(
+                        `https://api.themoviedb.org/3/tv/${show.id}/season/1`
+                    );
+                    if (seasonRes?.data?.episodes) {
+                        tmdbEpisodes.value = seasonRes.data.episodes;
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to load TMDb episode metadata:', err);
+            }
+        };
+
+        const getEpisodeStill = (epNum: number) => {
+            const match = tmdbEpisodes.value.find(e => e.episode_number === epNum);
+            if (match && match.still_path) {
+                return `https://image.tmdb.org/t/p/w500${match.still_path}`;
+            }
+            return anime.value?.bannerImage || anime.value?.coverImage?.large;
+        };
+
+        const getEpisodeTitle = (epNum: number) => {
+            const match = tmdbEpisodes.value.find(e => e.episode_number === epNum);
+            if (match && match.name) {
+                return match.name;
+            }
+            return `Episode ${epNum}`;
+        };
+
+        const getEpisodeOverview = (epNum: number) => {
+            const match = tmdbEpisodes.value.find(e => e.episode_number === epNum);
+            if (match && match.overview) {
+                return match.overview;
+            }
+            return 'Sub/Dub available';
+        };
+
+        const truncate = (text: string, max: number = 80) => {
+            if (!text) return '';
+            if (text.length <= max) return text;
+            return text.substring(0, max) + '...';
+        };
+
         const loadAnime = async (id: number) => {
             loading.value = true;
             anime.value = null;
@@ -190,6 +258,13 @@ export default defineComponent({
                         adult: false,
                         type: 'anime'
                     });
+
+                    // Trigger TMDb mapping matching
+                    loadTmdbEpisodes(
+                        anime.value.title.english,
+                        anime.value.title.romaji,
+                        anime.value.seasonYear
+                    );
                 }
             } catch (err) {
                 console.error('Failed to load anime:', err);
@@ -221,7 +296,11 @@ export default defineComponent({
             metaItems,
             statsItems,
             episodesList,
-            playRoute
+            playRoute,
+            getEpisodeStill,
+            getEpisodeTitle,
+            getEpisodeOverview,
+            truncate
         };
     }
 });
