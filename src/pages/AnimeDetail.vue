@@ -260,7 +260,7 @@ export default defineComponent({
         const getEpisodeStill = (epNum: number) => {
             const match = tmdbEpisodes.value.find(e => e.episode_number === epNum);
             if (match && match.still_path) {
-                return `https://image.tmdb.org/t/p/w500${match.still_path}`;
+                return `https://image.tmdb.org/t/p/w780${match.still_path}`;
             }
             return anime.value?.bannerImage || anime.value?.coverImage?.large;
         };

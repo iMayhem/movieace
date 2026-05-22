@@ -10,6 +10,8 @@ export interface ViewedItem {
 const MAX_HISTORY_LENGTH = 20;
 
 import { useStorage } from '@vueuse/core';
+import { watch } from 'vue';
+import { getCurrentUser, pushUserDataToSupabase } from '../lib/auth';
 
 export const searchHistory = useStorage<string[]>('searchHistory', []);
 export const viewHistory = useStorage<ViewedItem[]>('viewHistory', []);
@@ -23,6 +25,12 @@ export function addSearchTerm(term: string): void {
   if (searchHistory.value.length > MAX_HISTORY_LENGTH) {
     searchHistory.value = searchHistory.value.slice(0, 20);
   }
+  
+  // Sync to Supabase if user is logged in
+  const user = getCurrentUser();
+  if (user) {
+    pushUserDataToSupabase(user, [], undefined, searchHistory.value);
+  }
 }
 
 export function addViewedItem(item: ViewedItem): void {
@@ -34,6 +42,26 @@ export function addViewedItem(item: ViewedItem): void {
   if (viewHistory.value.length > MAX_HISTORY_LENGTH) {
     viewHistory.value = viewHistory.value.slice(0, 20);
   }
+  
+  // Sync to Supabase if user is logged in
+  const user = getCurrentUser();
+  if (user) {
+    pushUserDataToSupabase(user, [], viewHistory.value, undefined);
+  }
+}
+
+// Auto-sync watch history with Supabase when user is logged in
+if (typeof window !== 'undefined') {
+  watch(
+    viewHistory,
+    (newVal) => {
+      const user = getCurrentUser();
+      if (user) {
+        pushUserDataToSupabase(user, [], newVal, undefined);
+      }
+    },
+    { deep: true }
+  );
 }
 
 export function useHistory() {

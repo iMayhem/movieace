@@ -50,7 +50,14 @@ export async function registerUser(username: string, password: string): Promise<
         // Insert new user record
         const { error: insertError } = await supabase
             .from('movora_users')
-            .insert([{ username: cleanUsername, password_hash: passwordHash, liked_list: [], watchlist: [] }]);
+            .insert([{ 
+                username: cleanUsername, 
+                password_hash: passwordHash, 
+                liked_list: [], 
+                watchlist: [],
+                watch_history: [],
+                search_history: []
+            }]);
 
         if (insertError) {
             console.error('Error inserting user:', insertError);
@@ -102,6 +109,16 @@ export async function loginUser(username: string, password: string): Promise<{ s
         if (user.watchlist) {
             localStorage.setItem('watchlist', JSON.stringify(user.watchlist));
         }
+        
+        // Sync watch history
+        if (user.watch_history) {
+            localStorage.setItem('viewHistory', JSON.stringify(user.watch_history));
+        }
+        
+        // Sync search history
+        if (user.search_history) {
+            localStorage.setItem('searchHistory', JSON.stringify(user.search_history));
+        }
 
         window.dispatchEvent(new Event('movora_auth_change'));
         return { success: true };
@@ -127,19 +144,29 @@ export function getCurrentUser(): string | null {
 }
 
 // Helper to push user lists to Supabase
-export async function pushUserDataToSupabase(username: string, watchlist: any[]) {
+export async function pushUserDataToSupabase(username: string, watchlist: any[], watchHistory?: any[], searchHistory?: string[]) {
     try {
         const supabase = getSupabaseClient();
+        const updateData: any = { watchlist };
+        
+        if (watchHistory !== undefined) {
+            updateData.watch_history = watchHistory;
+        }
+        
+        if (searchHistory !== undefined) {
+            updateData.search_history = searchHistory;
+        }
+        
         const { error } = await supabase
             .from('movora_users')
-            .update({ watchlist })
+            .update(updateData)
             .eq('username', username.toLowerCase());
             
         if (error) {
-            console.error('Error updating watchlist in Supabase:', error);
+            console.error('Error updating user data in Supabase:', error);
         }
     } catch (e) {
-        console.error('Failed to update lists in Supabase:', e);
+        console.error('Failed to update user data in Supabase:', e);
     }
 }
 
@@ -150,15 +177,69 @@ export async function syncUserDataWithSupabase(username: string) {
         const supabase = getSupabaseClient();
         const { data: user, error } = await supabase
             .from('movora_users')
-            .select('watchlist')
+            .select('watchlist, watch_history, search_history')
             .eq('username', username.toLowerCase())
             .maybeSingle();
 
-        if (!error && user && user.watchlist) {
-            localStorage.setItem('watchlist', JSON.stringify(user.watchlist));
+        if (!error && user) {
+            if (user.watchlist) {
+                localStorage.setItem('watchlist', JSON.stringify(user.watchlist));
+            }
+            if (user.watch_history) {
+                localStorage.setItem('viewHistory', JSON.stringify(user.watch_history));
+            }
+            if (user.search_history) {
+                localStorage.setItem('searchHistory', JSON.stringify(user.search_history));
+            }
             window.dispatchEvent(new Event('movora_userdata_change'));
         }
     } catch (e) {
         console.error('Failed to sync user data from Supabase:', e);
+    }
+}
+
+// Clear watch history
+export async function clearWatchHistory(username: string) {
+    try {
+        const supabase = getSupabaseClient();
+        const { error } = await supabase
+            .from('movora_users')
+            .update({ watch_history: [] })
+            .eq('username', username.toLowerCase());
+            
+        if (error) {
+            console.error('Error clearing watch history:', error);
+            return false;
+        }
+        
+        localStorage.setItem('viewHistory', '[]');
+        window.dispatchEvent(new Event('movora_userdata_change'));
+        return true;
+    } catch (e) {
+        console.error('Failed to clear watch history:', e);
+        return false;
+    }
+}
+
+// Clear search history
+export async function clearSearchHistory(username: string) {
+    try {
+        const supabase = getSupabaseClient();
+        const { error } = await supabase
+            .from('movora_users')
+            .update({ search_history: [] })
+            .eq('username', username.toLowerCase());
+            
+        if (error) {
+            console.error('Error clearing search history:', error);
+            return false;
+        }
+        
+        localStorage.setItem('searchHistory', '[]');
+        window.dispatchEvent(new Event('movora_userdata_change'));
+        return true;
+    } catch (e) {
+        console.error('Failed to clear search history:', e);
+        return false;
     }
 }
