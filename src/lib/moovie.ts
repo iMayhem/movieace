@@ -18,8 +18,11 @@ async function fetchApi(path: string, options: RequestInit = {}): Promise<any> {
   const headers = new Headers(options.headers);
   headers.set('accept', 'application/json');
   headers.set('content-type', 'application/json');
-  headers.set('referer', 'https://h5.aoneroom.com');
   headers.set('x-client-info', JSON.stringify({ timezone: 'Africa/Nairobi' }));
+
+  if (!headers.has('referer')) {
+    headers.set('referer', 'https://h5.aoneroom.com');
+  }
 
   const res = await fetch(url, {
     ...options,
@@ -69,12 +72,12 @@ export async function getMoovieStream(params: {
       return null;
     }
 
-    // Pick best match: prefer year match for movies, fallback to first result
-    let matched = searchResult.items[0];
+    // Pick best match: prefer year match, otherwise prefer first item with resources, fallback to first item
+    let matched = searchResult.items.find((item: any) => item.hasResource) || searchResult.items[0];
     if (params.type === 'movie' && params.year) {
       const yearMatch = searchResult.items.find((r: any) => {
         const year = r.releaseDate ? Number(r.releaseDate.slice(0, 4)) : null;
-        return year === params.year;
+        return year === params.year && r.hasResource;
       });
       if (yearMatch) matched = yearMatch;
     }
