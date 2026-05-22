@@ -41,11 +41,6 @@ const streamCache = new NodeCache({ stdTTL: 600 }); // 10 minutes
 // ============================================================================
 // Middleware
 // ============================================================================
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Range']
-}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -385,7 +380,6 @@ app.get('/vps-proxy/subtitle', async (req, res) => {
     }
 
     res.setHeader('Content-Type', 'text/vtt; charset=utf-8');
-    res.setHeader('Access-Control-Allow-Origin', '*');
     res.send(content);
 
   } catch (error) {
