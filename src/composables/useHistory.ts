@@ -5,7 +5,7 @@ export interface ViewedItem {
   rating: number;
   categories: number[];
   adult: boolean;
-  type: 'movie' | 'tv';
+  type: 'movie' | 'tv' | 'anime';
 }
 const MAX_HISTORY_LENGTH = 20;
 

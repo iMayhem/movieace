@@ -83,7 +83,7 @@ import { genreName } from '../../composables/useGenreLookup';
 import { isInWatchlist, toggleWatchlistItem } from '../../composables/useWatchlist';
 import { useRouter } from 'vue-router';
 
-type MediaType = 'movie' | 'tv';
+type MediaType = 'movie' | 'tv' | 'anime';
 
 export default defineComponent({
     name: 'PosterCard',
@@ -94,6 +94,7 @@ export default defineComponent({
         posterPath: { type: String as PropType<string | null>, default: null },
         rating: { type: Number, default: 0 },
         releaseDate: { type: String, default: '' },
+        year: { type: [Number, String], default: '' },
         genreIds: { type: Array as PropType<number[]>, default: () => [] },
         adult: { type: Boolean, default: false },
         size: {
@@ -119,18 +120,20 @@ export default defineComponent({
             props.rating ? props.rating.toFixed(1) : ''
         );
 
-        const year = computed(() =>
-            props.releaseDate ? String(new Date(props.releaseDate).getFullYear()) : ''
-        );
-
-        const genreLabel = computed(() => {
-            if (!props.genreIds?.length) return '';
-            return genreName(props.genreIds[0], props.type) ?? '';
+        const yearLabel = computed(() => {
+            if (props.year) return String(props.year);
+            return props.releaseDate ? String(new Date(props.releaseDate).getFullYear()) : '';
         });
 
-        const routeTo = computed(() =>
-            props.type === 'tv' ? `/tv-show/${props.id}` : `/movie/${props.id}`
-        );
+        const genreLabel = computed(() => {
+            if (props.type === 'anime' || !props.genreIds?.length) return '';
+            return genreName(props.genreIds[0], props.type as 'movie' | 'tv') ?? '';
+        });
+
+        const routeTo = computed(() => {
+            if (props.type === 'anime') return `/anime/${props.id}`;
+            return props.type === 'tv' ? `/tv-show/${props.id}` : `/movie/${props.id}`;
+        });
 
         const inWatchlist = computed(() =>
             isInWatchlist(props.id, props.type)
@@ -149,7 +152,9 @@ export default defineComponent({
         };
 
         const goToStream = () => {
-            if (props.type === 'tv') {
+            if (props.type === 'anime') {
+                router.push(`/stream/anime/${props.id}`);
+            } else if (props.type === 'tv') {
                 router.push(`/stream/tv-show/${props.id}/season/1/episode/1`);
             } else {
                 router.push(`/stream/movie/${props.id}`);
@@ -204,7 +209,7 @@ export default defineComponent({
             imageUrl,
             initial,
             ratingLabel,
-            year,
+            year: yearLabel,
             genreLabel,
             routeTo,
             inWatchlist,

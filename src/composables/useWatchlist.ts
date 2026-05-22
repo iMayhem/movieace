@@ -9,7 +9,7 @@ export interface WatchlistItem {
   rating: number;
   categories: number[];
   adult: boolean;
-  type: 'movie' | 'tv';
+  type: 'movie' | 'tv' | 'anime';
   addedAt?: number;
   watched?: boolean;
   watchedAt?: number;
@@ -102,7 +102,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('movora_userdata_change', handleAuthOrDataChange);
 }
 
-export function isInWatchlist(id: number | string, type: 'movie' | 'tv'): boolean {
+export function isInWatchlist(id: number | string, type: 'movie' | 'tv' | 'anime'): boolean {
   return watchlist.value.some(item => item.id === id && item.type === type);
 }
 
@@ -118,7 +118,7 @@ export function addToWatchlist(item: WatchlistItem): void {
   }
 }
 
-export function removeFromWatchlist(id: number | string, type: 'movie' | 'tv'): void {
+export function removeFromWatchlist(id: number | string, type: 'movie' | 'tv' | 'anime'): void {
   watchlist.value = watchlist.value.filter(item => !(item.id === id && item.type === type));
 }
 
@@ -132,7 +132,7 @@ export function toggleWatchlistItem(item: WatchlistItem): void {
 
 export function setWatched(
   id: number | string,
-  type: 'movie' | 'tv',
+  type: 'movie' | 'tv' | 'anime',
   watched: boolean
 ): void {
   const idx = watchlist.value.findIndex(i => i.id === id && i.type === type);
@@ -146,7 +146,7 @@ export function setWatched(
   watchlist.value = next;
 }
 
-export function isWatched(id: number | string, type: 'movie' | 'tv'): boolean {
+export function isWatched(id: number | string, type: 'movie' | 'tv' | 'anime'): boolean {
   return watchlist.value.some(i => i.id === id && i.type === type && i.watched === true);
 }
 

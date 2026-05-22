@@ -21,6 +21,15 @@ const optimizeWithWsrv = (tmdbUrl: string, width: number) => {
 }
 
 export const useWebImage = (url: string, size: "medium" | "large" | "small" = "medium") => {
+    let resolvedUrl = url;
+    if (url.startsWith('//')) {
+        resolvedUrl = `https:${url}`;
+    }
+
+    if (resolvedUrl.startsWith('http://') || resolvedUrl.startsWith('https://')) {
+        return resolvedUrl;
+    }
+
     let imgSize = selectSize(size)
     const baseUrl = IMAGE_BASEURL.endsWith('/') ? IMAGE_BASEURL : `${IMAGE_BASEURL}/`
     const cleanUrl = url.startsWith('/') ? url.slice(1) : url

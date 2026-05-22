@@ -139,7 +139,7 @@ export default defineComponent({
     emits: ['trailer'],
     props: {
         id: { type: [Number, String], required: true },
-        type: { type: String as PropType<'movie' | 'tv'>, default: 'movie' },
+        type: { type: String as PropType<'movie' | 'tv' | 'anime'>, default: 'movie' },
         title: { type: String, required: true },
         tagline: { type: String, default: '' },
         eyebrow: { type: String, default: 'Feature' },
@@ -163,14 +163,20 @@ export default defineComponent({
 
         const backdropUrl = computed(() => {
             if (!props.backdropPath) return '';
+            // If backdropPath is already a full URL (e.g. from AniList banner), use it directly!
+            if (props.backdropPath.startsWith('http')) {
+                return props.backdropPath;
+            }
             const tmdbUrl = `${IMAGE_BASEURL}w1280${props.backdropPath}`;
-            // Use wsrv.nl for optimization
             return `https://wsrv.nl/?url=${encodeURIComponent(tmdbUrl)}&w=1280&output=webp&q=85`;
         });
 
-        const year = computed(() =>
-            props.releaseDate ? new Date(props.releaseDate).getFullYear() : null
-        );
+        const year = computed(() => {
+            if (!props.releaseDate) return null;
+            const parsed = parseInt(props.releaseDate);
+            if (!isNaN(parsed) && parsed > 1000 && parsed < 3000) return parsed;
+            return new Date(props.releaseDate).getFullYear();
+        });
 
         const ratingLabel = computed(() =>
             props.rating > 0 ? props.rating.toFixed(1) : ''
@@ -202,7 +208,7 @@ export default defineComponent({
             toggleMute
         } = useTrailerEmbed({
             id: toRef(props, 'id'),
-            type: toRef(props, 'type'),
+            type: toRef(props, 'type') as any,
             rootEl: rootRef,
             dwellMs: 3000
         });
@@ -212,7 +218,7 @@ export default defineComponent({
         };
 
         const partyHref = computed(() => {
-            const suffix = props.type === 'tv' ? '_s1e1' : '';
+            const suffix = props.type === 'tv' ? '_s1e1' : (props.type === 'anime' ? '_ep1' : '');
             return `/party/?room=${props.id}${suffix}&title=${encodeURIComponent(props.title)}`;
         });
 

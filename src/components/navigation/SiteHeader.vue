@@ -185,12 +185,18 @@ const primaryNav: NavItem[] = [
         num: 3
     },
     {
+        label: 'Anime',
+        path: '/anime',
+        match: p => p === '/anime' || p.startsWith('/anime/'),
+        num: 4
+    },
+    {
         label: 'Actors',
         path: '/actors',
         match: p => p === '/actors' || p.startsWith('/actor/'),
-        num: 4
+        num: 5
     },
-    { label: 'Watchlist', path: '/watchlist', match: p => p === '/watchlist', num: 5 }
+    { label: 'Watchlist', path: '/watchlist', match: p => p === '/watchlist', num: 6 }
 ];
 
 export default defineComponent({

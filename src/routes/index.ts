@@ -46,6 +46,15 @@ const routes: Array<RouteRecordRaw> = [
         }
     },
     {
+        path: '/anime',
+        name: 'Anime',
+        component: () => import('../pages/Anime.vue'),
+        meta: {
+            showInHeader: true,
+            title: 'Anime'
+        }
+    },
+    {
         'path': '/actors',
         'name': 'Actors',
         'component': () => import('../pages/Actors.vue'),
@@ -118,6 +127,35 @@ const routes: Array<RouteRecordRaw> = [
         meta: {
             showInHeader: false,
             title: 'Stream TV Show'
+        }
+    },
+    {
+        'path': '/anime/:id',
+        'name': 'AnimeDetail',
+        'component': () => import('../pages/AnimeDetail.vue'),
+        meta: {
+            showInHeader: false,
+            title: 'Anime Detail'
+        }
+    },
+    {
+        'path': '/stream/anime/:id',
+        alias: '/watch/anime/:id',
+        'name': 'StreamAnime',
+        'component': () => import('../pages/StreamAnime.vue'),
+        meta: {
+            showInHeader: false,
+            title: 'Stream Anime'
+        }
+    },
+    {
+        'path': '/stream/anime/:id/episode/:episode',
+        alias: '/watch/anime/:id/:episode',
+        'name': 'StreamAnimeEpisode',
+        'component': () => import('../pages/StreamAnime.vue'),
+        meta: {
+            showInHeader: false,
+            title: 'Stream Anime Episode'
         }
     },
 ];

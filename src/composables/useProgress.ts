@@ -6,7 +6,7 @@ export interface ProgressEntry {
   watched: number;
   duration: number;
   lastUpdated: number;
-  type: 'movie' | 'tv';
+  type: 'movie' | 'tv' | 'anime';
   season?: number;
   episode?: number;
 }
@@ -26,7 +26,8 @@ const TRACKED_ORIGINS: Record<string, string> = {
   'vidfast.pro': 'vidfast',
   '111movies.net': '111movies',
   'vsembed.ru': 'vidsrc',
-  'anyembed.xyz': 'anyembed'
+  'anyembed.xyz': 'anyembed',
+  'animeplay.cfd': 'animeplay'
 };
 
 function parseMessage(raw: unknown): Record<string, unknown> | null {
@@ -121,6 +122,24 @@ function normalizeProgress(
       }
       break;
     }
+
+    case 'animeplay': {
+      if (data.event === 'time') {
+        const time = data.time as number | undefined;
+        const duration = data.duration as number | undefined;
+        if (time !== undefined && duration !== undefined && duration > 0) {
+          return { watched: time, duration };
+        }
+      }
+      if (data.type === 'watching-log') {
+        const currentTime = data.currentTime as number | undefined;
+        const duration = data.duration as number | undefined;
+        if (currentTime !== undefined && duration !== undefined && duration > 0) {
+          return { watched: currentTime, duration };
+        }
+      }
+      break;
+    }
   }
 
   return null;
@@ -128,19 +147,22 @@ function normalizeProgress(
 
 function buildKey(
   mediaId: string | number,
-  type: 'movie' | 'tv',
+  type: 'movie' | 'tv' | 'anime',
   season?: number,
   episode?: number
 ): string {
   if (type === 'tv' && season && episode) {
     return `${mediaId}:tv:s${season}e${episode}`;
   }
+  if (type === 'anime' && episode) {
+    return `${mediaId}:anime:ep${episode}`;
+  }
   return `${mediaId}:${type}`;
 }
 
 export function saveProgress(
   mediaId: string | number,
-  type: 'movie' | 'tv',
+  type: 'movie' | 'tv' | 'anime',
   watched: number,
   duration: number,
   season?: number,
@@ -154,8 +176,8 @@ export function saveProgress(
   if (watchedPercent >= 95) {
     delete watchProgress.value[key];
     watchProgress.value = { ...watchProgress.value };
-    if (isInWatchlist(mediaId, type)) {
-      setWatched(mediaId, type, true);
+    if (isInWatchlist(mediaId, type as any)) {
+      setWatched(mediaId, type as any, true);
     }
     return;
   }
@@ -172,7 +194,7 @@ export function saveProgress(
 
 export function getProgress(
   mediaId: string | number,
-  type: 'movie' | 'tv',
+  type: 'movie' | 'tv' | 'anime',
   season?: number,
   episode?: number
 ): ProgressEntry | null {
@@ -182,7 +204,7 @@ export function getProgress(
 
 export function getProgressPercent(
   mediaId: string | number,
-  type: 'movie' | 'tv',
+  type: 'movie' | 'tv' | 'anime',
   season?: number,
   episode?: number
 ): number {
@@ -193,7 +215,7 @@ export function getProgressPercent(
 
 export function getResumeTimestamp(
   mediaId: string | number,
-  type: 'movie' | 'tv',
+  type: 'movie' | 'tv' | 'anime',
   season?: number,
   episode?: number
 ): number {
@@ -210,7 +232,7 @@ export function getAllProgress(): ProgressMap {
 
 export function startProgressTracking(
   mediaId: string | number,
-  type: 'movie' | 'tv',
+  type: 'movie' | 'tv' | 'anime',
   season?: number,
   episode?: number
 ): () => void {

@@ -1031,18 +1031,29 @@
         const prefillTitle = urlParams.get('title') || '';
 
         // Parsing room parameter for custom player URLs
+        let isAnime = false;
         let isTv = false;
         let mediaId = joinRoomId;
         let season = 1;
         let episode = 1;
 
         function parseMediaParams(idString) {
-            isTv = idString.includes('_s');
+            isAnime = idString.startsWith('anime_') || idString.includes('_ep');
+            isTv = idString.includes('_s') && !isAnime;
             mediaId = idString;
             season = 1;
             episode = 1;
 
-            if (isTv) {
+            if (isAnime) {
+                const cleanId = idString.replace('anime_', '');
+                if (cleanId.includes('_ep')) {
+                    const parts = cleanId.split('_ep');
+                    mediaId = parts[0];
+                    episode = parseInt(parts[1]) || 1;
+                } else {
+                    mediaId = cleanId;
+                }
+            } else if (isTv) {
                 const parts = idString.split('_s');
                 mediaId = parts[0];
                 const epParts = parts[1].split('e');
@@ -1155,6 +1166,11 @@
             populateServerDropdown();
             
             // Select default provider and load iframe
+            if (isAnime) {
+                activeProvider = 'animeplay_sub';
+            } else {
+                activeProvider = 'vidking';
+            }
             switchStreamProvider(activeProvider);
 
             // Update URL to the shareable room UUID link
@@ -1177,6 +1193,18 @@
 
         function populateServerDropdown() {
             const menu = document.getElementById('server-dropdown-menu');
+            if (isAnime) {
+                const animeServers = [
+                    { id: 'animeplay_sub', name: 'AnimePlay CFD (Sub)' },
+                    { id: 'animeplay_dub', name: 'AnimePlay CFD (Dub)' }
+                ];
+                menu.innerHTML = animeServers.map(srv => `
+                    <button class="server-dropdown-item ${srv.id === activeProvider ? 'active' : ''}" onclick="switchStreamProvider('${srv.id}')">
+                        ${srv.name}
+                    </button>
+                `).join('');
+                return;
+            }
             menu.innerHTML = serversList.map(srv => `
                 <button class="server-dropdown-item ${srv.id === activeProvider ? 'active' : ''}" onclick="switchStreamProvider('${srv.id}')">
                     ${srv.name}
@@ -1185,6 +1213,10 @@
         }
 
         function getEmbedUrlForServer(srv, tmdbId, isTvShow, s, e) {
+            if (isAnime) {
+                const lang = activeProvider === 'animeplay_dub' ? 'dub' : 'sub';
+                return `https://animeplay.cfd/stream/ani/${tmdbId}/${e}/${lang}`;
+            }
             let template = isTvShow ? srv.tv : srv.movie;
             return template
                 .replaceAll('{tmdbId}', tmdbId)
@@ -1197,6 +1229,17 @@
             activeProvider = providerId;
 
             // Update trigger active text
+            if (isAnime) {
+                const matchedName = providerId === 'animeplay_dub' ? 'AnimePlay CFD (Dub)' : 'AnimePlay CFD (Sub)';
+                document.getElementById('active-server-name').textContent = matchedName;
+                populateServerDropdown();
+
+                const iframe = document.getElementById('video-player-iframe');
+                iframe.style.display = 'block';
+                iframe.src = getEmbedUrlForServer(null, mediaId, false, 1, episode);
+                return;
+            }
+
             const matched = serversList.find(s => s.id === providerId);
             if (matched) {
                 document.getElementById('active-server-name').textContent = matched.name;
@@ -1206,8 +1249,6 @@
             populateServerDropdown();
 
             const iframe = document.getElementById('video-player-iframe');
-            const stage = iframe.parentElement;
-
             if (matched) {
                 // Load standard iframe embed
                 iframe.style.display = 'block';

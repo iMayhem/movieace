@@ -63,7 +63,7 @@ import { useWebImage } from '../../utils/useWebImage';
 
 interface Entry {
     id: number | string;
-    type: 'movie' | 'tv';
+    type: 'movie' | 'tv' | 'anime';
     title: string;
     image: string;
     initial: string;
@@ -90,6 +90,7 @@ export default defineComponent({
                 const initial = (item.title?.[0] || '·').toUpperCase();
 
                 const isTv = item.type === 'tv';
+                const isAnime = item.type === 'anime';
                 const season = state?.season && state.season > 0 ? state.season : 1;
                 const episode = state?.episode && state.episode > 0 ? state.episode : 1;
 
@@ -97,17 +98,21 @@ export default defineComponent({
                     item.id,
                     item.type,
                     isTv ? season : undefined,
-                    isTv ? episode : undefined
+                    (isTv || isAnime) ? episode : undefined
                 );
-                const resumePath = isTv
-                    ? `/stream/tv-show/${item.id}/season/${season}/episode/${episode}`
-                    : `/stream/movie/${item.id}`;
+                const resumePath = isAnime
+                    ? `/stream/anime/${item.id}/episode/${episode}`
+                    : (isTv
+                        ? `/stream/tv-show/${item.id}/season/${season}/episode/${episode}`
+                        : `/stream/movie/${item.id}`);
 
-                const subtitle = isTv
-                    ? `S${season} · E${episode}`
-                    : item.rating
-                        ? `★ ${item.rating.toFixed(1)}`
-                        : '';
+                const subtitle = isAnime
+                    ? `Episode ${episode}`
+                    : (isTv
+                        ? `S${season} · E${episode}`
+                        : item.rating
+                            ? `★ ${item.rating.toFixed(1)}`
+                            : '');
 
                 return {
                     id: item.id,
@@ -115,13 +120,15 @@ export default defineComponent({
                     title: item.title,
                     image,
                     initial,
-                    eyebrow: isTv ? 'Series' : 'Film',
+                    eyebrow: isAnime ? 'Anime' : (isTv ? 'Series' : 'Film'),
                     subtitle,
                     resumePath,
                     progress,
-                    ariaLabel: isTv
-                        ? `Resume ${item.title} Season ${season} Episode ${episode}`
-                        : `Resume ${item.title}`
+                    ariaLabel: isAnime
+                        ? `Resume ${item.title} Episode ${episode}`
+                        : (isTv
+                            ? `Resume ${item.title} Season ${season} Episode ${episode}`
+                            : `Resume ${item.title}`)
                 } satisfies Entry;
             });
         });
