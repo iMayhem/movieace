@@ -23,7 +23,7 @@
                     </div>
                 </div>
 
-                <!-- If not Moviebox Direct: Render standard iframe -->
+                <!-- If not native: Render standard iframe -->
                 <iframe
                     v-else-if="embedUrl && !isNative && !hasError"
                     ref="frameEl"
@@ -96,7 +96,7 @@ export default defineComponent({
         const hasError = ref(false);
 
         // Native streaming states
-        const isNative = computed(() => props.embedUrl && (props.embedUrl.startsWith('http://161.118.191.46') || props.embedUrl.startsWith('https://api.moovie.fun')));
+        const isNative = computed(() => props.embedUrl && props.embedUrl.startsWith('https://api.moovie.fun'));
         const videoUrl = ref('');
         const subtitles = ref<Array<{ label: string; src: string; srclang: string; default: boolean }>>([]);
         const resolutions = ref<Array<{ label: string; url: string }>>([]);
@@ -180,7 +180,7 @@ export default defineComponent({
             }
         };
 
-        // Resolves Moviebox dynamic stream links
+        // Resolves stream links
         const resolveStream = async () => {
             if (!isNative.value) return;
 
@@ -194,14 +194,14 @@ export default defineComponent({
                 const type = props.mediaType;
                 const titleEnc = encodeURIComponent(props.title);
 
-                // Step 1: Search VPS API to get the correct Moviebox subject ID and detailPath
+                // Step 1: Search API to get the correct subject ID and detailPath
                 const searchUrl = `https://api.moovie.fun/vps-proxy/search?q=${titleEnc}&type=${type === 'movie' ? 'movie' : 'tv'}`;
                 const searchRes = await fetch(searchUrl);
                 if (!searchRes.ok) throw new Error('Metadata resolver is currently offline');
                 
                 const searchData = await searchRes.json();
                 const item = searchData.results?.[0];
-                if (!item) throw new Error('No matching streaming source found on Moviebox Direct');
+                if (!item) throw new Error('No matching streaming source found');
 
                 const detailPath = item.raw?.detailPath || item.pageUrl;
                 const subjectId = item.id;
