@@ -279,7 +279,12 @@ export default defineComponent({
 
         const fetchReviews = async (id: string) => {
             try {
-                const res = await useAxios().get(`https://api.themoviedb.org/3/movie/${id}/reviews?language=en-US&page=1`);
+                const res = await useAxios().get(`movie/${id}/reviews`, {
+                    params: {
+                        language: 'en-US',
+                        page: 1
+                    }
+                });
                 const data = res.data as ReviewsResponse;
                 reviews.value = (data.results ?? [])
                     .slice(0, 6)

@@ -214,7 +214,12 @@ export default defineComponent({
 
         const fetchUpcomingTv = async () => {
             try {
-                const res = await useAxios().get('https://api.themoviedb.org/3/tv/on_the_air?language=en-US&page=1');
+                const res = await useAxios().get('tv/on_the_air', {
+                    params: {
+                        language: 'en-US',
+                        page: 1
+                    }
+                });
                 const data = res.data as UpcomingTvResponse;
                 upcomingTv.value = data.results ?? [];
             } catch {
