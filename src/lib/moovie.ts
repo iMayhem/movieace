@@ -26,8 +26,7 @@ async function fetchApi(path: string, options: RequestInit = {}): Promise<any> {
 
   const res = await fetch(url, {
     ...options,
-    headers,
-    credentials: 'include' // Capture and reuse cookies automatically in browser
+    headers
   });
 
   if (!res.ok) {
