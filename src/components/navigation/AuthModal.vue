@@ -180,11 +180,15 @@ export default defineComponent({
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: var(--s-4);
+    overflow-y: auto;
 }
 
 .auth-modal {
     width: 90%;
     max-width: 380px;
+    max-height: calc(100vh - 2 * var(--s-4));
+    overflow-y: auto;
     background: rgba(18, 18, 24, 0.82);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);

@@ -4,12 +4,6 @@
 
         <main id="main" class="discover__main" role="main">
             <section class="discover__masthead container-lm">
-                <p class="eyebrow discover__eyebrow">The Library · Features</p>
-                <h1 class="discover__title display">Discover movies</h1>
-                <p class="discover__subtitle">
-                    Thread genres, years, and tempo. Build the programme you want to watch tonight.
-                </p>
-
                 <form class="discover__search" role="search" @submit.prevent>
                     <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8">
                         <circle cx="11" cy="11" r="7"/>
@@ -442,7 +436,7 @@ export default defineComponent({
     }
 
     &__masthead {
-        padding-block: clamp(var(--s-5), 5vw, var(--s-7));
+        padding-block: var(--s-4);
         border-bottom: 1px solid var(--rule);
         margin-bottom: clamp(var(--s-6), 6vw, var(--s-8));
     }
@@ -472,7 +466,6 @@ export default defineComponent({
     }
 
     &__search {
-        margin-top: var(--s-6);
         display: flex;
         align-items: center;
         gap: var(--s-3);
