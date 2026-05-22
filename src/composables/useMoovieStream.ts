@@ -1,7 +1,7 @@
 import { ref } from 'vue';
-import { getMovieboxStream, type MovieboxStreamResponse } from '../lib/moviebox';
+import { getMoovieStream, type MoovieStreamResponse } from '../lib/moovie';
 
-export interface MovieboxStreamParams {
+export interface MoovieStreamParams {
   title: string;
   type: 'movie' | 'tv';
   season?: number;
@@ -11,17 +11,17 @@ export interface MovieboxStreamParams {
 
 const isLoading = ref(false);
 const error = ref<string | null>(null);
-const streamData = ref<MovieboxStreamResponse | null>(null);
+const streamData = ref<MoovieStreamResponse | null>(null);
 
-export function useMovieboxStream() {
-  async function fetchMovieboxStream(params: MovieboxStreamParams): Promise<MovieboxStreamResponse | null> {
+export function useMoovieStream() {
+  async function fetchMoovieStream(params: MoovieStreamParams): Promise<MoovieStreamResponse | null> {
     isLoading.value = true;
     error.value = null;
     streamData.value = null;
 
     try {
-      const result = await getMovieboxStream(params);
-      
+      const result = await getMoovieStream(params);
+
       if (!result || !result.streamUrl) {
         error.value = 'No stream found for this title';
         return null;
@@ -30,7 +30,7 @@ export function useMovieboxStream() {
       streamData.value = result;
       return result;
     } catch (err) {
-      console.error('Error fetching Moviebox stream:', err);
+      console.error('Error fetching Moovie stream:', err);
       error.value = err instanceof Error ? err.message : 'Failed to fetch stream';
       return null;
     } finally {
@@ -47,7 +47,7 @@ export function useMovieboxStream() {
     isLoading,
     error,
     streamData,
-    fetchMovieboxStream,
+    fetchMoovieStream,
     clearStream
   };
 }

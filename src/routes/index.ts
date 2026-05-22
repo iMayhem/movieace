@@ -121,12 +121,12 @@ const routes: Array<RouteRecordRaw> = [
         }
     },
     {
-        path: '/moviebox-player',
-        name: 'MovieboxPlayer',
-        component: () => import('../pages/MovieboxPlayer.vue'),
+        path: '/moovie-player',
+        name: 'MooviePlayer',
+        component: () => import('../pages/MooviePlayer.vue'),
         meta: {
             showInHeader: false,
-            title: 'Moviebox Player'
+            title: 'Moovie Player'
         }
     },
 ];

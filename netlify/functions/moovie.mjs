@@ -87,7 +87,7 @@ export default async (request, context) => {
       );
     }
 
-    console.log(`Moviebox: matched "${matched.title}" → ${detailPath}`);
+    console.log(`Moovie: matched "${matched.title}" → ${detailPath}`);
 
     let streamResult;
     if (type === 'movie') {
@@ -131,7 +131,7 @@ export default async (request, context) => {
     );
 
   } catch (error) {
-    console.error('Moviebox function error:', error);
+    console.error('Moovie function error:', error);
     return new Response(
       JSON.stringify({ error: 'Internal server error while resolving stream' }),
       { status: 500, headers: corsHeaders }
@@ -140,5 +140,5 @@ export default async (request, context) => {
 };
 
 export const config = {
-  path: '/api/moviebox'
+  path: '/api/moovie'
 };

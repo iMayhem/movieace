@@ -1,19 +1,19 @@
-// Moviebox streams are resolved server-side via a Netlify function.
+// Moovie streams are resolved server-side via a Netlify function.
 // This module is a thin browser-safe fetch wrapper — no Node.js SDK here.
 
-export interface MovieboxStreamResponse {
+export interface MoovieStreamResponse {
   streamUrl: string | null;
   subtitles: { label: string; src: string; lang: string }[];
   options: { label: string; url: string }[];
 }
 
-export async function getMovieboxStream(params: {
+export async function getMoovieStream(params: {
   title: string;
   type: 'movie' | 'tv';
   season?: number;
   episode?: number;
   year?: number;
-}): Promise<MovieboxStreamResponse | null> {
+}): Promise<MoovieStreamResponse | null> {
   const query = new URLSearchParams({ title: params.title, type: params.type });
 
   if (params.type === 'tv') {
@@ -25,13 +25,13 @@ export async function getMovieboxStream(params: {
     query.append('year', String(params.year));
   }
 
-  const res = await fetch(`/api/moviebox?${query.toString()}`);
+  const res = await fetch(`/api/moovie?${query.toString()}`);
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    console.error('Moviebox API error:', body);
+    console.error('Moovie API error:', body);
     return null;
   }
 
-  return res.json() as Promise<MovieboxStreamResponse>;
+  return res.json() as Promise<MoovieStreamResponse>;
 }
