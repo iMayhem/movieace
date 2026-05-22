@@ -411,8 +411,8 @@ export default defineComponent({
 
         @media (min-width: 1024px) {
             grid-template-columns: 1fr 380px;
-            align-items: start;
-            padding: 0 var(--s-5);
+            align-items: stretch;
+            padding: 0 var(--s-5) var(--s-6) var(--s-5);
         }
     }
 
@@ -430,12 +430,30 @@ export default defineComponent({
         :deep(.server-accordion) {
             background: var(--ink-850);
             box-shadow: inset 0 0 0 1px var(--rule);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
         }
 
         :deep(.server-accordion__body) {
             @media (min-width: 1024px) {
-                max-height: 480px;
+                flex: 1;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+                box-sizing: border-box;
+                overflow: hidden;
+                padding-bottom: var(--s-4);
+            }
+        }
+
+        :deep(.server-accordion__grid) {
+            @media (min-width: 1024px) {
+                flex: 1;
                 overflow-y: auto;
+                margin-top: var(--s-3);
+                padding-right: var(--s-2);
 
                 &::-webkit-scrollbar {
                     width: 6px;

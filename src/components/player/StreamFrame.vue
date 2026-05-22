@@ -460,8 +460,12 @@ export default defineComponent({
         margin: 0 auto;
         padding: 0 var(--s-4) var(--s-5) var(--s-4);
 
-        @media (min-width: 768px) {
+        @media (min-width: 768px) and (max-width: 1023px) {
             padding: 0 var(--s-5) var(--s-6) var(--s-5);
+        }
+
+        @media (min-width: 1024px) {
+            padding: 0;
         }
     }
 
