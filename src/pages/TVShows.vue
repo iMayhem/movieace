@@ -381,7 +381,7 @@ export default defineComponent({
         });
 
         onMounted(async () => {
-            document.title = 'Discover TV Shows — Movieace';
+            document.title = 'Discover TV Shows — Moovie';
             primeGenres();
             hydrateFromRoute();
 

@@ -232,7 +232,7 @@ export default defineComponent({
         });
 
         onMounted(() => {
-            document.title = 'People — Movieace';
+            document.title = 'People — Moovie';
             fetchPage(1, false);
         });
 

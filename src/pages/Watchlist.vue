@@ -212,9 +212,6 @@
                         <router-link to="/tv-shows" class="watchlist__empty-cta">
                             Browse series
                         </router-link>
-                        <button type="button" class="watchlist__empty-cta" @click="triggerImport">
-                            Import JSON
-                        </button>
                     </div>
                 </div>
             </section>

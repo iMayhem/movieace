@@ -341,7 +341,7 @@ export default defineComponent({
         );
 
         onMounted(() => {
-            document.title = 'Search — Movieace';
+            document.title = 'Search — Moovie';
             window.scrollTo(0, 0);
             if (searchTerm.value.trim()) {
                 performSearch(searchTerm.value);

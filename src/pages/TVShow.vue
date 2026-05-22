@@ -324,7 +324,7 @@ export default defineComponent({
                 trailers.value = videos ?? [];
 
                 if (show.value) {
-                    document.title = `${show.value.name} — Movieace`;
+                    document.title = `${show.value.name} — Moovie`;
                     addViewedItem({
                         id: show.value.id,
                         title: show.value.name,

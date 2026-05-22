@@ -39,7 +39,7 @@ export default defineComponent({
     name: 'NotFound',
     setup() {
         onMounted(() => {
-            document.title = '404 · Movieace';
+            document.title = '404 · Moovie';
         });
     }
 });

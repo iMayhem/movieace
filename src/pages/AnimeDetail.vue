@@ -298,7 +298,7 @@ export default defineComponent({
 
                 if (anime.value) {
                     const title = anime.value.title.english || anime.value.title.romaji || anime.value.title.native;
-                    document.title = `${title} — Movieace`;
+                    document.title = `${title} — Moovie`;
                     
                     addViewedItem({
                         id: anime.value.id,

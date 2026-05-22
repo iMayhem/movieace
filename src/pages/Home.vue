@@ -228,7 +228,7 @@ export default defineComponent({
         };
 
         onMounted(async () => {
-            document.title = 'Movieace — A Cinema Periodical';
+            document.title = 'Moovie — A Cinema Periodical';
             primeGenres();
             await Promise.all([
                 fetchAllHighlights(),
