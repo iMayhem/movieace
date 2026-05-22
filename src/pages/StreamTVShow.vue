@@ -41,24 +41,28 @@
         </header>
 
         <main class="watch-stage__main" id="main">
-            <StreamFrame
-                :embed-url="currentEmbedUrl"
-                :title="show?.name || 'Stream'"
-                :backdrop-path="show?.backdrop_path || ''"
-                :poster-path="show?.poster_path || ''"
-                :media-id="showId"
-                media-type="tv"
-                :season="currentSeason"
-                :episode="currentEpisode"
-            />
+            <div class="watch-stage__theater">
+                <div class="watch-stage__player-container">
+                    <StreamFrame
+                        :embed-url="currentEmbedUrl"
+                        :title="show?.name || 'Stream'"
+                        :backdrop-path="show?.backdrop_path || ''"
+                        :poster-path="show?.poster_path || ''"
+                        :media-id="showId"
+                        media-type="tv"
+                        :season="currentSeason"
+                        :episode="currentEpisode"
+                    />
+                </div>
 
-            <section class="watch-stage__rack">
-                <ServerAccordion
-                    :servers="availableServers"
-                    :active-server-index="currentStreamData.currentServer"
-                    @server-change="changeServer"
-                />
-            </section>
+                <div class="watch-stage__aside">
+                    <ServerAccordion
+                        :servers="availableServers"
+                        :active-server-index="currentStreamData.currentServer"
+                        @server-change="changeServer"
+                    />
+                </div>
+            </div>
 
             <section v-if="availableSeasons.length" class="watch-stage__rack">
                 <EpisodeNavigator
@@ -636,6 +640,56 @@ export default defineComponent({
         display: grid;
         gap: var(--s-7);
         padding-bottom: var(--s-9);
+    }
+
+    &__theater {
+        display: grid;
+        gap: var(--s-5);
+        max-width: 1440px;
+        width: 100%;
+        margin: 0 auto;
+        box-sizing: border-box;
+
+        @media (min-width: 1024px) {
+            grid-template-columns: 1fr 380px;
+            align-items: start;
+            padding: 0 var(--s-5);
+        }
+    }
+
+    &__player-container {
+        min-width: 0;
+    }
+
+    &__aside {
+        min-width: 0;
+
+        @media (max-width: 1023px) {
+            padding: 0 var(--s-4);
+        }
+
+        :deep(.server-accordion) {
+            background: var(--ink-850);
+            box-shadow: inset 0 0 0 1px var(--rule);
+        }
+
+        :deep(.server-accordion__body) {
+            @media (min-width: 1024px) {
+                max-height: 480px;
+                overflow-y: auto;
+
+                &::-webkit-scrollbar {
+                    width: 6px;
+                }
+                &::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                &::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: var(--r-pill);
+                }
+            }
+        }
     }
 
     &__rack {
