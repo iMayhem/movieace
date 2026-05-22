@@ -495,7 +495,7 @@ export default defineComponent({
     height: 100vh;
     height: 100dvh;
     overflow-y: scroll;
-    scroll-snap-type: y mandatory;
+    scroll-snap-type: y proximity;
     scroll-behavior: smooth;
     background: var(--ink-900);
     color: var(--bone-50);
@@ -746,7 +746,7 @@ export default defineComponent({
     &__feature {
         // Snap slide 2: full viewport, content centered
         scroll-snap-align: start;
-        scroll-snap-stop: always;
+        scroll-snap-stop: normal;
         height: 100dvh;
         display: grid;
         align-content: center;
