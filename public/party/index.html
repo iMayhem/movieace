@@ -1170,11 +1170,11 @@
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById('room-view').classList.add('active');
             
-            document.getElementById('room-playing-title').textContent = room.movie_title || room.name;
-            document.getElementById('banner-playing-text').textContent = `🍿 Watching: ${room.movie_title || 'Feature'}`;
-            
-            // Resolve media params and URLs
+            // Resolve media params and URLs first
             parseMediaParams(room.embed_sources);
+
+            // Update Banner details
+            updateBannerText();
             
             // Populate server dropdown
             populateServerDropdown();
@@ -1324,6 +1324,9 @@
         function changePartyEpisode(nextEp) {
             episode = nextEp;
             
+            // Update UI Banner Text
+            updateBannerText();
+
             // 1. Switch local iframe src
             switchStreamProvider(activeProvider);
 
@@ -1359,6 +1362,24 @@
             } else {
                 controlsBar.style.display = 'none';
             }
+        }
+
+        function updateBannerText() {
+            let baseTitle = activeRoom ? activeRoom.movie_title : 'Feature';
+            // Strip out any trailing " - Episode X" or " - Episode Y" from the baseTitle
+            const epIndex = baseTitle.indexOf(' - Episode');
+            if (epIndex !== -1) {
+                baseTitle = baseTitle.substring(0, epIndex);
+            }
+            
+            // Build the updated title
+            let updatedTitle = baseTitle;
+            if (isAnime || isTv) {
+                updatedTitle = `${baseTitle} - Episode ${episode}`;
+            }
+            
+            document.getElementById('banner-playing-text').textContent = `🍿 Watching: ${updatedTitle}`;
+            document.getElementById('room-playing-title').textContent = updatedTitle;
         }
 
         // Copy shared link
@@ -1495,6 +1516,7 @@
                 .on('broadcast', { event: 'next_episode' }, (payload) => {
                     const nextEp = payload.payload.episode;
                     episode = nextEp;
+                    updateBannerText();
                     switchStreamProvider(activeProvider);
                     appendChatMessage('System', `The host advanced the watch party to Episode ${nextEp}!`, 'system');
                 })
