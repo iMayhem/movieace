@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>moovie · System Status</title>
+    <meta name="description" content="Real-time status monitoring for moovie services, APIs, and embed providers">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --ink-950: #04060a;
+            --ink-900: #0a0a0c;
+            --ink-800: #121115;
+            --surface: rgba(10, 10, 12, 0.75);
+            --surface-tint: rgba(255, 255, 255, 0.04);
+            --surface-hover: rgba(255, 255, 255, 0.08);
+            --ember: #ff5a1f;
+            --violet: #6366f1;
+            --bone-50: #fbfbfb;
+            --bone-200: #e0deda;
+            --bone-400: #999690;
+            --bone-500: #7c7974;
+            --rule: rgba(255, 255, 255, 0.08);
+            --rule-strong: rgba(255, 255, 255, 0.16);
+            --green: #10b981;
+            --yellow: #f59e0b;
+            --red: #ef4444;
+            --r-sm: 6px;
+            --r-md: 12px;
+            --r-lg: 20px;
+            --font-display: 'Outfit', sans-serif;
+            --font-ui: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --dur-fast: 0.2s;
+            --dur-base: 0.3s;
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--ink-950);
+            color: var(--bone-50);
+            font-family: var(--font-ui);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(255, 90, 31, 0.05) 0%, transparent 40%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--ember) 0%, #ff8a00 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--bone-400);
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .overall-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-md);
+            backdrop-filter: blur(12px);
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .status-dot.operational {
+            background: var(--green);
+            box-shadow: 0 0 12px var(--green);
+        }
+
+        .status-dot.degraded {
+            background: var(--yellow);
+            box-shadow: 0 0 12px var(--yellow);
+        }
+
+        .status-dot.down {
+            background: var(--red);
+            box-shadow: 0 0 12px var(--red);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-md);
+            padding: 1.25rem;
+            backdrop-filter: blur(12px);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value.green { color: var(--green); }
+        .stat-value.yellow { color: var(--yellow); }
+        .stat-value.red { color: var(--red); }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--bone-400);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        /* Service Categories */
+        .category {
+            margin-bottom: 2rem;
+        }
+
+        .category-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--rule);
+        }
+
+        .category-icon {
+            font-size: 1.5rem;
+        }
+
+        .category-title {
+            font-family: var(--font-display);
+            font-size: 1.35rem;
+            font-weight: 700;
+        }
+
+        .services-grid {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        /* Service Card */
+        .service-card {
+            background: var(--surface);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-md);
+            padding: 1.25rem;
+            backdrop-filter: blur(12px);
+            transition: all var(--dur-fast) var(--ease-out);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .service-card:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .service-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .service-name {
+            font-weight: 600;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .service-url {
+            font-size: 0.8rem;
+            color: var(--bone-400);
+            font-family: var(--font-mono);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .service-meta {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .service-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.85rem;
+            border-radius: var(--r-sm);
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .service-status.operational {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--green);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .service-status.degraded {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--yellow);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .service-status.down {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--red);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .service-status.checking {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--violet);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .service-response-time {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--bone-400);
+        }
+
+        .service-response-time strong {
+            color: var(--bone-200);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--rule);
+            border-top-color: var(--violet);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Refresh Button */
+        .refresh-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--ember) 0%, #ff8a00 100%);
+            border: none;
+            color: #000;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(255, 90, 31, 0.4);
+            transition: all var(--dur-fast) var(--ease-out);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px) rotate(90deg);
+            box-shadow: 0 12px 32px rgba(255, 90, 31, 0.5);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0) rotate(180deg);
+        }
+
+        /* Last Updated */
+        .last-updated {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--rule);
+            color: var(--bone-500);
+            font-size: 0.85rem;
+        }
+
+        .last-updated strong {
+            color: var(--bone-200);
+            font-family: var(--font-mono);
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem 0.75rem;
+            }
+
+            .logo {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 0.9rem;
+            }
+
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+
+            .stat-card {
+                padding: 1rem;
+            }
+
+            .stat-value {
+                font-size: 1.5rem;
+            }
+
+            .service-card {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.75rem;
+            }
+
+            .service-meta {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+
+            .service-status,
+            .service-response-time {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .refresh-btn {
+                bottom: 1rem;
+                right: 1rem;
+                width: 48px;
+                height: 48px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .category-title {
+                font-size: 1.15rem;
+            }
+
+            .service-name {
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="logo">moovie ✦</h1>
+            <p class="subtitle">Real-time System Status Monitor</p>
+            <div class="overall-status">
+                <div class="status-dot checking" id="overall-status-dot"></div>
+                <span id="overall-status-text">Checking Systems...</span>
+            </div>
+        </header>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-value green" id="stat-operational">-</div>
+                <div class="stat-label">Operational</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value yellow" id="stat-degraded">-</div>
+                <div class="stat-label">Degraded</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value red" id="stat-down">-</div>
+                <div class="stat-label">Down</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="stat-avg-response" style="color: var(--violet)">-</div>
+                <div class="stat-label">Avg Response</div>
+            </div>
+        </div>
+
+        <!-- Core APIs -->
+        <section class="category">
+            <div class="category-header">
+                <span class="category-icon">🔌</span>
+                <h2 class="category-title">Core APIs</h2>
+            </div>
+            <div class="services-grid" id="core-apis"></div>
+        </section>
+
+        <!-- Movie Embed Providers -->
+        <section class="category">
+            <div class="category-header">
+                <span class="category-icon">🎬</span>
+                <h2 class="category-title">Movie Embed Providers</h2>
+            </div>
+            <div class="services-grid" id="embed-providers"></div>
+        </section>
+
+        <!-- Anime Providers -->
+        <section class="category">
+            <div class="category-header">
+                <span class="category-icon">🎌</span>
+                <h2 class="category-title">Anime Providers</h2>
+            </div>
+            <div class="services-grid" id="anime-providers"></div>
+        </section>
+
+        <!-- Database & Backend -->
+        <section class="category">
+            <div class="category-header">
+                <span class="category-icon">💾</span>
+                <h2 class="category-title">Database & Backend</h2>
+            </div>
+            <div class="services-grid" id="backend-services"></div>
+        </section>
+
+        <!-- Last Updated -->
+        <div class="last-updated">
+            Last updated: <strong id="last-updated-time">-</strong>
+            <br>
+            <span style="font-size: 0.75rem; margin-top: 0.5rem; display: inline-block;">
+                Auto-refreshes every 60 seconds
+            </span>
+        </div>
+    </div>
+
+    <!-- Refresh Button -->
+    <button class="refresh-btn" onclick="checkAllServices()" title="Refresh Status">
+        ↻
+    </button>
+
+    <script src="status-checker.js"></script>
+</body>
+</html>
