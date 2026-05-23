@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔒 Protection Test Page</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .test-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .test-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .test-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .icon {
+            font-size: 1.5em;
+            margin-right: 15px;
+            min-width: 30px;
+        }
+        
+        .test-content {
+            flex: 1;
+        }
+        
+        .test-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .test-desc {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .status {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .status.protected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .selectable-text {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 2px dashed #2196f3;
+        }
+        
+        .input-test {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 1em;
+        }
+        
+        .alert {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .alert-title {
+            font-weight: 600;
+            color: #856404;
+            margin-bottom: 5px;
+        }
+        
+        .alert-text {
+            color: #856404;
+            font-size: 0.95em;
+        }
+        
+        img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 Protection Test Page</h1>
+        <p class="subtitle">Try to bypass these protections to verify they're working</p>
+        
+        <!-- Right-Click Test -->
+        <div class="test-section">
+            <h2>🖱️ Right-Click Protection</h2>
+            <div class="test-item">
+                <span class="icon">👆</span>
+                <div class="test-content">
+                    <div class="test-title">Try to right-click anywhere on this page</div>
+                    <div class="test-desc">Context menu should NOT appear</div>
+                </div>
+                <span class="status protected">✓ Protected</span>
+            </div>
+            
+            <div class="test-item">
+                <span class="icon">🖼️</span>
+                <div class="test-content">
+                    <div class="test-title">Try to right-click this image</div>
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='100'%3E%3Crect fill='%23667eea' width='200' height='100'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='white' font-family='Arial' font-size='20'%3EProtected Image%3C/text%3E%3C/svg%3E" alt="Test Image">
+                    <div class="test-desc">Right-click should be blocked</div>
+                </div>
+                <span class="status protected">✓ Protected</span>
+            </div>
+        </div>
+        
+        <!-- Keyboard Shortcuts Test -->
+        <div class="test-section">
+            <h2>⌨️ Keyboard Shortcuts Protection</h2>
+            <div class="test-item">
+                <span class="icon">🔑</span>
+                <div class="test-content">
+                    <div class="test-title">Press F12</div>
+                    <div class="test-desc">DevTools should NOT open</div>
+                </div>
+                <span class="status protected">✓ Protected</span>
+            </div>
+            
+            <div class="test-item">
+                <span class="icon">🔑</span>
+                <div class="test-content">
+                    <div class="test-title">Press Ctrl+Shift+I (or Cmd+Option+I on Mac)</div>
+                    <div class="test-desc">DevTools should NOT open</div>
+                </div>
+                <span class="status protected">✓ Protected</span>
+            </div>
+            
+            <div class="test-item">
+                <span class="icon">🔑</span>
+                <div class="test-content">
+                    <div class="test-title">Press Ctrl+U (or Cmd+U on Mac)</div>
+                    <div class="test-desc">View Source should NOT open</div>
+                </div>
+                <span class="status protected">✓ Protected</span>
+            </div>
+            
+            <div class="test-item">
+                <span class="icon">🔑</span>
+                <div class="test-content">
+                    <div class="test-title">Press Ctrl+S (or Cmd+S on Mac)</div>
+                    <div class="test-desc">Save dialog should NOT appear</div>
+                </div>
+                <span class="status protected">✓ Protected</span>
+            </div>
+            
+            <div class="test-item">
+                <span class="icon">🔑</span>
+                <div class="test-content">
+                    <div class="test-title">Press Ctrl+P (or Cmd+P on Mac)</div>
+                    <div class="test-desc">Print dialog should NOT appear</div>
+                </div>
+                <span class="status protected">✓ Protected</span>
+            </div>
+        </div>
+        
+        <!-- Text Selection Test -->
+        <div class="test-section">
+            <h2>📝 Text Selection Protection</h2>
+            <div class="test-item">
+                <span class="icon">📄</span>
+                <div class="test-content">
+                    <div class="test-title">Try to select this text</div>
+                    <div class="selectable-text">
+                        This is some sample text that you should NOT be able to select. 
+                        Try clicking and dragging to select it. The selection should be blocked.
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                    </div>
+                    <div class="test-desc">Text selection should be blocked</div>
+                </div>
+                <span class="status protected">✓ Protected</span>
+            </div>
+            
+            <div class="test-item">
+                <span class="icon">✏️</span>
+                <div class="test-content">
+                    <div class="test-title">But input fields should still work</div>
+                    <input type="text" class="input-test" placeholder="You SHOULD be able to select text here" value="This text can be selected and copied">
+                    <div class="test-desc">Input fields are NOT blocked (for usability)</div>
+                </div>
+                <span class="status warning">⚠️ Allowed</span>
+            </div>
+        </div>
+        
+        <!-- Copy/Paste Test -->
+        <div class="test-section">
+            <h2>📋 Copy/Paste Protection</h2>
+            <div class="test-item">
+                <span class="icon">📋</span>
+                <div class="test-content">
+                    <div class="test-title">Try to copy this text (Ctrl+C or Cmd+C)</div>
+                    <div class="selectable-text">
+                        Try to copy this text using keyboard shortcuts. It should be blocked.
+                    </div>
+                    <div class="test-desc">Copy should be blocked</div>
+                </div>
+                <span class="status protected">✓ Protected</span>
+            </div>
+        </div>
+        
+        <!-- DevTools Detection Test -->
+        <div class="test-section">
+            <h2>🔍 DevTools Detection</h2>
+            <div class="test-item">
+                <span class="icon">🛠️</span>
+                <div class="test-content">
+                    <div class="test-title">Try to open DevTools using browser menu</div>
+                    <div class="test-desc">
+                        If you manage to open DevTools (via browser menu), the screen should lock with a warning overlay.
+                        Close DevTools to unlock.
+                    </div>
+                </div>
+                <span class="status protected">✓ Protected</span>
+            </div>
+        </div>
+        
+        <!-- Alert Box -->
+        <div class="alert">
+            <div class="alert-title">⚠️ Note for Developers</div>
+            <div class="alert-text">
+                This protection is active in PRODUCTION builds only. If you're testing locally, 
+                make sure to build the project (<code>npm run build</code>) and preview it 
+                (<code>npm run preview</code>) to see the protection in action.
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>MovieAce Anti-Inspect Protection System</strong></p>
+            <p>If all tests show "✓ Protected", your protection is working correctly!</p>
+        </div>
+    </div>
+</body>
+</html>
