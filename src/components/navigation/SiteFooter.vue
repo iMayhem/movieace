@@ -97,7 +97,7 @@ const columns: FooterCol[] = [
         links: [
             {
                 label: 'Status',
-                href: 'https://status.movieace.pages.dev',
+                href: 'https://status.moovie.fun',
                 external: true
             }
         ]
