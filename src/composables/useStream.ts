@@ -25,6 +25,7 @@ const defaultStreamData: StreamData = {
 export const streamData = useStorage<StreamData>('streamData', defaultStreamData);
 
 export const movieServers = ref<Server[]>([
+  { name: 'CineStream (Direct)', urlTemplate: 'NATIVE:/api/cinestream?type=movie&id={tmdbId}' },
   { name: 'VidKing', urlTemplate: 'https://www.vidking.net/embed/movie/{tmdbId}?autoPlay=true' },
   { name: 'VidEasy', urlTemplate: 'https://player.videasy.net/movie/{tmdbId}?color=#4eb5ff' },
   { name: 'Cinemaos', urlTemplate: 'https://cinemaos.tech/player/{tmdbId}' },
@@ -42,6 +43,7 @@ export const movieServers = ref<Server[]>([
 ]);
 
 export const tvServers = ref<Server[]>([
+  { name: 'CineStream (Direct)', urlTemplate: 'NATIVE:/api/cinestream?type=tv&id={externalId}&season={season}&episode={episode}' },
   { name: 'VidKing', urlTemplate: 'https://www.vidking.net/embed/tv/{externalId}/{season}/{episode}?autoPlay=true&nextEpisode=true&episodeSelector=true' },
   { name: 'VidEasy', urlTemplate: 'https://player.videasy.net/tv/{externalId}/{season}/{episode}?color=#4eb5ff&nextEpisode=true&autoplayNextEpisode=true&episodeSelector=true' },
   { name: 'Cinemaos', urlTemplate: 'https://cinemaos.tech/player/{externalId}/{season}/{episode}' },
@@ -183,6 +185,11 @@ export function buildStreamUrl(
       .replace('{externalId}', id)
       .replace('{season}', String(Math.max(1, season)))
       .replace('{episode}', String(Math.max(1, episode)));
+  }
+
+  if (url.startsWith('NATIVE:')) {
+    if (_movieTitle) url += `&title=${encodeURIComponent(_movieTitle)}`;
+    if (_year) url += `&year=${_year}`;
   }
 
   // Add timestamp parameter for sync functionality

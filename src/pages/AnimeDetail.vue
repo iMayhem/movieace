@@ -50,6 +50,20 @@
                     <h3 class="episode-guide__title display">Episode guide</h3>
                     <p class="episode-guide__desc">Every installment, in running order.</p>
 
+                    <!-- Premium Custom Season Changer tabs -->
+                    <div v-if="seasonsList.length > 1" class="anime-detail__seasons-rail">
+                        <button
+                            v-for="s in seasonsList"
+                            :key="s.id"
+                            type="button"
+                            class="season-tab-btn"
+                            :class="{ 'is-active': s.id === anime.id }"
+                            @click="goToSeason(s.id)"
+                        >
+                            {{ s.label }}
+                        </button>
+                    </div>
+
                     <div class="episode-guide__grid">
                         <router-link
                             v-for="ep in paginatedEpisodesList"
@@ -118,7 +132,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import SiteHeader from '../components/navigation/SiteHeader.vue';
 import SiteFooter from '../components/navigation/SiteFooter.vue';
 import TitleMasthead from '../components/detail/TitleMasthead.vue';
@@ -141,6 +155,7 @@ export default defineComponent({
     },
     setup() {
         const route = useRoute();
+        const router = useRouter();
         const { fetchAnimeById } = useAniList();
 
         const anime = ref<any | null>(null);
@@ -220,33 +235,145 @@ export default defineComponent({
             return list;
         });
 
+        const seasonsList = computed(() => {
+            if (!anime.value) return [];
+            const list = [];
+            
+            list.push({
+                id: anime.value.id,
+                title: anime.value.title.english || anime.value.title.romaji || anime.value.title.native,
+                year: anime.value.seasonYear || 0
+            });
+            
+            const edges = anime.value.relations?.edges || [];
+            for (const edge of edges) {
+                const node = edge.node;
+                if (node.type === 'ANIME' && (edge.relationType === 'PREQUEL' || edge.relationType === 'SEQUEL')) {
+                    list.push({
+                        id: node.id,
+                        title: node.title.english || node.title.romaji || node.title.native,
+                        year: node.seasonYear || 0
+                    });
+                }
+            }
+            
+            // Deduplicate
+            const unique = list.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+            
+            // Sort chronologically
+            unique.sort((a, b) => a.year - b.year);
+            
+            // Generate friendly season labels
+            return unique.map((item, idx) => {
+                let label = `Season ${idx + 1}`;
+                
+                const name = item.title;
+                const lowerName = name.toLowerCase();
+                if (lowerName.includes('entertainment district')) {
+                    label = `Season ${idx + 1} (Entertainment District)`;
+                } else if (lowerName.includes('swordsmith village')) {
+                    label = `Season ${idx + 1} (Swordsmith Village)`;
+                } else if (lowerName.includes('hashira training')) {
+                    label = `Season ${idx + 1} (Hashira Training)`;
+                } else if (lowerName.includes('mugen train')) {
+                    label = `Season ${idx + 1} (Mugen Train)`;
+                } else if (lowerName.includes('final season')) {
+                    label = `Final Season`;
+                }
+                
+                return {
+                    id: item.id,
+                    label: label
+                };
+            });
+        });
+
+        const goToSeason = (id: number) => {
+            router.push(`/anime/${id}`);
+        };
+
         const tmdbEpisodes = ref<any[]>([]);
 
-        const loadTmdbEpisodes = async (englishTitle: string, romajiTitle: string, year?: number) => {
+        const loadTmdbEpisodes = async (anilistMedia: any) => {
             tmdbEpisodes.value = [];
+            if (!anilistMedia) return;
+
+            const englishTitle = anilistMedia.title.english;
+            const romajiTitle = anilistMedia.title.romaji;
+
             try {
                 let show = null;
-                const yearParam = year ? `&first_air_date_year=${year}` : '';
                 
-                // Try English Title first
+                // Try English Title search (clean title without Season suffixes)
                 if (englishTitle) {
+                    const cleanTitle = englishTitle.replace(/Season \d+|Part \d+/gi, '').trim();
                     const searchRes = await useAxios().get(
-                        `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(englishTitle)}${yearParam}`
+                        `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(cleanTitle)}`
                     );
                     show = searchRes?.data?.results?.[0];
                 }
                 
                 // Fallback to Romaji Title
                 if (!show && romajiTitle) {
+                    const cleanTitle = romajiTitle.replace(/Season \d+|Part \d+/gi, '').trim();
                     const searchRes = await useAxios().get(
-                        `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(romajiTitle)}${yearParam}`
+                        `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(cleanTitle)}`
                     );
                     show = searchRes?.data?.results?.[0];
                 }
                 
                 if (show) {
+                    // Fetch full TV show details to get list of all seasons
+                    const showRes = await useAxios().get(`https://api.themoviedb.org/3/tv/${show.id}`);
+                    const tmdbSeasons = showRes?.data?.seasons || [];
+                    
+                    // Match current AniList media to correct TMDB season
+                    let seasonNumber = 1;
+                    const anilistYear = anilistMedia.seasonYear;
+                    const anilistTitle = (englishTitle || romajiTitle || '').toLowerCase();
+                    
+                    // Keyword matching (Mugen, Entertainment, Swordsmith, etc.)
+                    for (const s of tmdbSeasons) {
+                        const sName = (s.name || '').toLowerCase();
+                        const keywords = ['mugen', 'entertainment', 'swordsmith', 'hashira', 'yuukaku', 'katanakaji'];
+                        for (const kw of keywords) {
+                            if (sName.includes(kw) && anilistTitle.includes(kw)) {
+                                seasonNumber = s.season_number;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Year matching
+                    if (seasonNumber === 1 && anilistYear) {
+                        const exactMatch = tmdbSeasons.find((s: any) => {
+                            if (!s.air_date) return false;
+                            return new Date(s.air_date).getFullYear() === anilistYear;
+                        });
+                        if (exactMatch) {
+                            seasonNumber = exactMatch.season_number;
+                        } else {
+                            // Find closest year
+                            let closestSeason = tmdbSeasons[0];
+                            let minDiff = Infinity;
+                            for (const s of tmdbSeasons) {
+                                if (!s.air_date) continue;
+                                const sYear = new Date(s.air_date).getFullYear();
+                                const diff = Math.abs(sYear - anilistYear);
+                                if (diff < minDiff) {
+                                    minDiff = diff;
+                                    closestSeason = s;
+                                }
+                            }
+                            if (closestSeason && minDiff <= 1) {
+                                seasonNumber = closestSeason.season_number;
+                            }
+                        }
+                    }
+                    
+                    // Fetch matched season's episodes
                     const seasonRes = await useAxios().get(
-                        `https://api.themoviedb.org/3/tv/${show.id}/season/1`
+                        `https://api.themoviedb.org/3/tv/${show.id}/season/${seasonNumber}`
                     );
                     if (seasonRes?.data?.episodes) {
                         tmdbEpisodes.value = seasonRes.data.episodes;
@@ -311,11 +438,7 @@ export default defineComponent({
                     });
 
                     // Trigger TMDb mapping matching
-                    loadTmdbEpisodes(
-                        anime.value.title.english,
-                        anime.value.title.romaji,
-                        anime.value.seasonYear
-                    );
+                    loadTmdbEpisodes(anime.value);
                 }
             } catch (err) {
                 console.error('Failed to load anime:', err);
@@ -348,6 +471,8 @@ export default defineComponent({
             statsItems,
             episodesList,
             playRoute,
+            seasonsList,
+            goToSeason,
             getEpisodeStill,
             getEpisodeTitle,
             getEpisodeOverview,
@@ -583,6 +708,44 @@ export default defineComponent({
         color: var(--bone-400);
         text-transform: uppercase;
         letter-spacing: 0.05em;
+    }
+}
+
+.anime-detail__seasons-rail {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    margin-bottom: var(--s-6);
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+    &::-webkit-scrollbar { display: none; }
+}
+
+.season-tab-btn {
+    padding: 0.5rem 1rem;
+    background: var(--ink-800);
+    border: 1px solid var(--rule);
+    color: var(--bone-300);
+    font-family: var(--font-ui);
+    font-weight: 500;
+    font-size: var(--fs-sm);
+    border-radius: var(--r-pill);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all var(--dur-fast) var(--ease-out);
+
+    &:hover {
+        border-color: var(--ember);
+        color: var(--bone-50);
+    }
+
+    &.is-active {
+        background: var(--ember);
+        border-color: var(--ember);
+        color: #000;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(229, 9, 20, 0.2);
     }
 }
 </style>

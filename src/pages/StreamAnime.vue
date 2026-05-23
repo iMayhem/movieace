@@ -56,6 +56,31 @@
                 </div>
 
                 <div class="watch-stage__aside">
+                    <!-- Premium Season Selector -->
+                    <div v-if="seasonsList.length > 1" class="season-switcher">
+                        <p class="eyebrow season-switcher__header">Season / Arc</p>
+                        <div class="season-switcher__select-wrapper">
+                            <select
+                                :value="animeId"
+                                @change="goToSeason(Number(($event.target as HTMLSelectElement).value))"
+                                class="season-switcher__select"
+                            >
+                                <option
+                                    v-for="s in seasonsList"
+                                    :key="s.id"
+                                    :value="s.id"
+                                >
+                                    {{ s.label }}
+                                </option>
+                            </select>
+                            <span class="season-switcher__chevron" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M6 9l6 6 6-6" />
+                                </svg>
+                            </span>
+                        </div>
+                    </div>
+
                     <!-- Premium Dub / Sub Switcher styled exactly as standard components -->
                     <div v-if="availableServers[activeServerIndex]?.name !== 'Videasy'" class="language-switcher">
                         <p class="eyebrow language-switcher__header">Language Pref</p>
@@ -342,6 +367,65 @@ export default defineComponent({
             return `/party/?room=anime_${animeId.value}_ep${currentEpisode.value}&title=${encodeURIComponent(titleStr)}`;
         });
 
+        const seasonsList = computed(() => {
+            if (!anime.value) return [];
+            const list = [];
+            
+            list.push({
+                id: anime.value.id,
+                title: anime.value.title.english || anime.value.title.romaji || anime.value.title.native,
+                year: anime.value.seasonYear || 0
+            });
+            
+            const edges = anime.value.relations?.edges || [];
+            for (const edge of edges) {
+                const node = edge.node;
+                if (node.type === 'ANIME' && (edge.relationType === 'PREQUEL' || edge.relationType === 'SEQUEL')) {
+                    list.push({
+                        id: node.id,
+                        title: node.title.english || node.title.romaji || node.title.native,
+                        year: node.seasonYear || 0
+                    });
+                }
+            }
+            
+            // Deduplicate
+            const unique = list.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+            
+            // Sort chronologically
+            unique.sort((a, b) => a.year - b.year);
+            
+            // Generate friendly season labels
+            return unique.map((item, idx) => {
+                let label = `Season ${idx + 1}`;
+                
+                const name = item.title;
+                const lowerName = name.toLowerCase();
+                if (lowerName.includes('entertainment district')) {
+                    label = `Season ${idx + 1} (Entertainment District)`;
+                } else if (lowerName.includes('swordsmith village')) {
+                    label = `Season ${idx + 1} (Swordsmith Village)`;
+                } else if (lowerName.includes('hashira training')) {
+                    label = `Season ${idx + 1} (Hashira Training)`;
+                } else if (lowerName.includes('mugen train')) {
+                    label = `Season ${idx + 1} (Mugen Train)`;
+                } else if (lowerName.includes('final season')) {
+                    label = `Final Season`;
+                }
+                
+                return {
+                    id: item.id,
+                    label: label
+                };
+            });
+        });
+
+        const goToSeason = (id: number) => {
+            if (id !== animeId.value) {
+                router.push(`/stream/anime/${id}/episode/1`);
+            }
+        };
+
         const animeProgress = (epNumber: number) => {
             return getProgressPercent(animeId.value, 'anime', 1, epNumber) / 100;
         };
@@ -465,6 +549,8 @@ export default defineComponent({
             availableServers,
             currentEmbedUrl,
             partyHref,
+            seasonsList,
+            goToSeason,
             activeLanguage,
             animeProgress,
             ranges,
@@ -965,5 +1051,61 @@ export default defineComponent({
     text-align: center;
     padding: var(--s-5);
     color: var(--bone-400);
+}
+
+.season-switcher {
+    background: var(--ink-800);
+    border: 1px solid var(--rule);
+    border-radius: var(--r-lg);
+    padding: var(--s-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+
+    &__header {
+        margin: 0;
+    }
+
+    &__select-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    &__select {
+        width: 100%;
+        padding: 0.6rem 2.5rem 0.6rem 1rem;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid var(--rule);
+        border-radius: var(--r-sm);
+        color: var(--bone-50);
+        font-family: var(--font-ui);
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        appearance: none;
+        outline: none;
+        transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+
+        &:hover, &:focus {
+            border-color: var(--ember);
+        }
+    }
+
+    &__chevron {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: var(--bone-400);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        svg {
+            width: 16px;
+            height: 16px;
+        }
+    }
 }
 </style>

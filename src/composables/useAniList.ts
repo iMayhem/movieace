@@ -258,6 +258,25 @@ export function useAniList() {
             timeUntilAiring
             episode
           }
+          relations {
+            edges {
+              relationType
+              node {
+                id
+                title {
+                  romaji
+                  english
+                  native
+                }
+                type
+                format
+                seasonYear
+                coverImage {
+                  large
+                }
+              }
+            }
+          }
         }
       }
     `;

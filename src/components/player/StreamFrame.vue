@@ -96,7 +96,7 @@ export default defineComponent({
         const hasError = ref(false);
 
         // Native streaming states
-        const isNative = computed(() => props.embedUrl && props.embedUrl.startsWith('https://api.moovie.fun'));
+        const isNative = computed(() => props.embedUrl && (props.embedUrl.startsWith('https://api.moovie.fun') || props.embedUrl.startsWith('NATIVE:')));
         const videoUrl = ref('');
         const subtitles = ref<Array<{ label: string; src: string; srclang: string; default: boolean }>>([]);
         const resolutions = ref<Array<{ label: string; url: string }>>([]);
@@ -192,26 +192,43 @@ export default defineComponent({
 
             try {
                 const type = props.mediaType;
-                const titleEnc = encodeURIComponent(props.title);
+                let resolveData;
 
-                // Step 1: Search API to get the correct subject ID and detailPath
-                const searchUrl = `https://api.moovie.fun/vps-proxy/search?q=${titleEnc}&type=${type === 'movie' ? 'movie' : 'tv'}`;
-                const searchRes = await fetch(searchUrl);
-                if (!searchRes.ok) throw new Error('Metadata resolver is currently offline');
-                
-                const searchData = await searchRes.json();
-                const item = searchData.results?.[0];
-                if (!item) throw new Error('No matching streaming source found');
+                if (props.embedUrl.startsWith('NATIVE:')) {
+                    let cleanUrl = props.embedUrl.substring(7); // Strip 'NATIVE:'
+                    
+                    // If in local development, route to VPS scraper for testing
+                    if (cleanUrl.startsWith('/api/cinestream') && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+                        cleanUrl = `http://80.225.227.41/api/cinestream/resolve${cleanUrl.substring(15)}`;
+                    }
 
-                const detailPath = item.raw?.detailPath || item.pageUrl;
-                const subjectId = item.id;
+                    console.log(`[StreamFrame] Native direct fetch: ${cleanUrl}`);
+                    const resolveRes = await fetch(cleanUrl);
+                    if (!resolveRes.ok) throw new Error('CineStream resolver is offline');
+                    resolveData = await resolveRes.json();
+                } else {
+                    const titleEnc = encodeURIComponent(props.title);
 
-                // Step 2: Resolve stream options and subtitles
-                const resolveUrl = `https://api.moovie.fun/vps-proxy/resolve?detailPath=${encodeURIComponent(detailPath)}&subjectId=${subjectId}&type=${type}&season=${props.season}&episode=${props.episode}`;
-                const resolveRes = await fetch(resolveUrl);
-                if (!resolveRes.ok) throw new Error('Failed to resolve media stream URLs');
+                    // Step 1: Search API to get the correct subject ID and detailPath
+                    const searchUrl = `https://api.moovie.fun/vps-proxy/search?q=${titleEnc}&type=${type === 'movie' ? 'movie' : 'tv'}`;
+                    const searchRes = await fetch(searchUrl);
+                    if (!searchRes.ok) throw new Error('Metadata resolver is currently offline');
+                    
+                    const searchData = await searchRes.json();
+                    const item = searchData.results?.[0];
+                    if (!item) throw new Error('No matching streaming source found');
 
-                const resolveData = await resolveRes.json();
+                    const detailPath = item.raw?.detailPath || item.pageUrl;
+                    const subjectId = item.id;
+
+                    // Step 2: Resolve stream options and subtitles
+                    const resolveUrl = `https://api.moovie.fun/vps-proxy/resolve?detailPath=${encodeURIComponent(detailPath)}&subjectId=${subjectId}&type=${type}&season=${props.season}&episode=${props.episode}`;
+                    const resolveRes = await fetch(resolveUrl);
+                    if (!resolveRes.ok) throw new Error('Failed to resolve media stream URLs');
+
+                    resolveData = await resolveRes.json();
+                }
+
                 if (!resolveData.stream && (!resolveData.options || resolveData.options.length === 0)) {
                     throw new Error('Streaming resource is currently offline for this item');
                 }
@@ -219,7 +236,7 @@ export default defineComponent({
                 // Format stream options
                 const streamOptions = resolveData.options || [];
                 resolutions.value = streamOptions.map((opt: any) => ({
-                    label: `${opt.quality}p (${opt.format.toUpperCase()})`,
+                    label: `${opt.quality || 'Auto'} (${opt.format?.toUpperCase() || 'M3U8'})`,
                     url: opt.url
                 }));
 

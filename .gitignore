@@ -33,3 +33,4 @@ Movora
 .dev.vars*
 !.dev.vars.example
 !.env.example
+ssh-main.key
