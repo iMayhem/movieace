@@ -317,6 +317,25 @@ export default defineComponent({
                 return;
             }
 
+            // First, try different qualities of the same stream
+            if (artplayerInstance && artplayerInstance.quality && artplayerInstance.quality.length > 1) {
+                const currentQuality = artplayerInstance.quality.find((q: any) => q.default);
+                const currentIndex = artplayerInstance.quality.indexOf(currentQuality);
+                
+                // Try next quality in the same stream
+                if (currentIndex < artplayerInstance.quality.length - 1) {
+                    const nextQuality = artplayerInstance.quality[currentIndex + 1];
+                    console.log(`[AUTO-FALLBACK] Switching to next quality: ${nextQuality.html}`);
+                    
+                    if (artplayerInstance) {
+                        artplayerInstance.notice.show = `Switching to ${nextQuality.html}...`;
+                        artplayerInstance.switchQuality(nextQuality.url);
+                    }
+                    return;
+                }
+            }
+
+            // If no more qualities, try next stream source
             if (currentStreamIndex.value < resolutions.value.length - 1) {
                 currentStreamIndex.value++;
                 const nextStream = resolutions.value[currentStreamIndex.value];
@@ -350,6 +369,32 @@ export default defineComponent({
                 default: res.url === videoUrl.value
             }));
 
+            // Sort qualities to prioritize 1080p and working streams
+            const sortedQualities = [...qualityList].sort((a, b) => {
+                // Prioritize 1080p
+                if (a.html.includes('1080') && !b.html.includes('1080')) return -1;
+                if (!a.html.includes('1080') && b.html.includes('1080')) return 1;
+                
+                // Then prioritize M3U8 format
+                if (a.html.includes('M3U8') && !b.html.includes('M3U8')) return -1;
+                if (!a.html.includes('M3U8') && b.html.includes('M3U8')) return 1;
+                
+                return 0;
+            });
+
+            // Use the best quality as default if available
+            const bestQuality = sortedQualities[0];
+            if (bestQuality && !isUserManualSwitch.value) {
+                videoUrl.value = bestQuality.url;
+                console.log(`[AUTO-FALLBACK] Auto-selecting best quality: ${bestQuality.html}`);
+            }
+
+            // Update quality list with new default
+            const finalQualityList = qualityList.map(q => ({
+                ...q,
+                default: q.url === videoUrl.value
+            }));
+
             const subtitleList = subtitles.value.map((sub: any) => ({
                 html: sub.label,
                 url: sub.src,
@@ -373,7 +418,7 @@ export default defineComponent({
                 fullscreenWeb: true,
                 miniProgressBar: true,
                 theme: '#E50914', // Premium Netflix Red theme
-                quality: qualityList,
+                quality: finalQualityList,
                 customType: {
                     m3u8: function (video, url, art: any) {
                         if (Hls.isSupported()) {
@@ -474,6 +519,30 @@ export default defineComponent({
             artplayerInstance.on('video:error', () => {
                 console.log('[AUTO-FALLBACK] Video error detected, trying next stream...');
                 tryNextStream();
+            });
+
+            // Auto-fallback: Try 1080p quality first if available
+            artplayerInstance.on('video:loadstart', () => {
+                if (hasPlayedSuccessfully.value || isUserManualSwitch.value) {
+                    return;
+                }
+
+                // Look for 1080p quality and switch to it if current is not working
+                setTimeout(() => {
+                    if (artplayerInstance && artplayerInstance.quality && artplayerInstance.quality.length > 1) {
+                        const currentQuality = artplayerInstance.quality.find((q: any) => q.default);
+                        const quality1080p = artplayerInstance.quality.find((q: any) => 
+                            q.html && (q.html.includes('1080p') || q.html.includes('1080'))
+                        );
+
+                        // If current quality is not 1080p and 1080p is available, switch to it
+                        if (quality1080p && currentQuality && currentQuality.url !== quality1080p.url) {
+                            console.log('[AUTO-FALLBACK] Auto-selecting 1080p quality for better playback');
+                            artplayerInstance.notice.show = 'Switching to 1080p for better quality...';
+                            artplayerInstance.switchQuality(quality1080p.url);
+                        }
+                    }
+                }, 1000); // Wait 1 second for qualities to load
             });
 
             artplayerInstance.on('quality', (quality: any) => {
