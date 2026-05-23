@@ -238,11 +238,11 @@ export async function onRequest(context) {
     }
   }
 
-  const type = url.searchParams.get('type');
-  const id = url.searchParams.get('id');
+  let type = url.searchParams.get('type');
+  let id = url.searchParams.get('id');
   const title = url.searchParams.get('title') || '';
   const year = url.searchParams.get('year') || '';
-  const season = url.searchParams.get('season') || '';
+  let season = url.searchParams.get('season') || '';
   const episode = url.searchParams.get('episode') || '';
 
   if (!id || !type) {
@@ -253,6 +253,25 @@ export async function onRequest(context) {
         'access-control-allow-origin': '*'
       }
     });
+  }
+
+  // Dynamic TMDB mapping for Anime requests
+  if (type === 'anime') {
+    try {
+      const searchRes = await fetch(`https://api.themoviedb.org/3/search/tv?api_key=dfa4c2c7c1de1005adee824dc5593672&query=${encodeURIComponent(title)}`, {
+        cf: { cacheTtl: 86400 }
+      });
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        if (searchData && searchData.results && searchData.results.length > 0) {
+          id = String(searchData.results[0].id);
+          type = 'tv';
+          season = '1';
+        }
+      }
+    } catch (err) {
+      // Ignore fallback
+    }
   }
 
   // Priority 4: Progressive Loading - Return first available stream immediately
@@ -303,15 +322,18 @@ export async function onRequest(context) {
       // Priority 1: Race Videasy servers, return first 3 successful responses
       const videasyPromises = VIDEASY_SERVERS.map(server =>
         scrapeVideasyForServer(server, type, id, title, year, season, episode)
-          .then(res => res || Promise.reject('No result'))
+          .then(res => res || null)
+          .catch(() => null)
       );
 
       const videasyResults = [];
       for (const promise of videasyPromises) {
         try {
           const result = await Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000))]);
-          videasyResults.push(result);
-          if (videasyResults.length >= 3) break; // Stop after 3 successful servers
+          if (result) {
+            videasyResults.push(result);
+            if (videasyResults.length >= 3) break; // Stop after 3 successful servers
+          }
         } catch (e) {
           // Continue to next server
         }
@@ -343,15 +365,18 @@ export async function onRequest(context) {
   // Priority 1: Race Videasy servers, collect first 3 successful responses
   const videasyPromises = VIDEASY_SERVERS.map(server =>
     scrapeVideasyForServer(server, type, id, title, year, season, episode)
-      .then(res => res || Promise.reject('No result'))
+      .then(res => res || null)
+      .catch(() => null)
   );
 
   const videasyResults = [];
   for (const promise of videasyPromises) {
     try {
       const result = await Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000))]);
-      videasyResults.push(result);
-      if (videasyResults.length >= 3) break; // Stop after 3 successful servers
+      if (result) {
+        videasyResults.push(result);
+        if (videasyResults.length >= 3) break; // Stop after 3 successful servers
+      }
     } catch (e) {
       // Continue to next server
     }

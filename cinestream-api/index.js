@@ -196,13 +196,36 @@ async function scrapeVideasy(type, tmdbId, title, year, season, episode) {
 
 // ── Main Unified Resolution Route ─────────────────────────────
 app.get('/api/cinestream/resolve', async (req, res) => {
-  const { type, id, title, year, season, episode } = req.query;
+  let { type, id, title, year, season, episode } = req.query;
 
   if (!id || !type) {
     return res.status(400).json({ error: 'Missing required query parameters: id, type' });
   }
 
-  console.log(`[CineStream] Starting resolution for type=${type}, id=${id}, title=${title}, year=${year}`);
+  // Handle anime dynamic mapping to tv type on TMDB
+  if (type === 'anime') {
+    try {
+      const searchRes = await axios.get(`https://api.themoviedb.org/3/search/tv`, {
+        params: {
+          api_key: 'dfa4c2c7c1de1005adee824dc5593672',
+          query: title
+        },
+        timeout: 4000
+      });
+      if (searchRes.data && searchRes.data.results && searchRes.data.results.length > 0) {
+        id = String(searchRes.data.results[0].id);
+        type = 'tv';
+        season = '1';
+        console.log(`[CineStream Anime Mapping] Mapped title "${title}" to TMDB TV ID: ${id}`);
+      } else {
+        console.log(`[CineStream Anime Mapping] No TMDB results found for title "${title}"`);
+      }
+    } catch (err) {
+      console.error(`[CineStream Anime Mapping Error] ${err.message}`);
+    }
+  }
+
+  console.log(`[CineStream] Starting resolution for type=${type}, id=${id}, title=${title}, year=${year}, season=${season}, episode=${episode}`);
 
   // Priority 4: Progressive Loading - Return first available stream immediately
   const allOptions = [];
@@ -253,15 +276,18 @@ app.get('/api/cinestream/resolve', async (req, res) => {
       // Priority 1: Race Videasy servers, return first 3 successful responses
       const videasyPromises = VIDEASY_SERVERS.map(server =>
         scrapeVideasyForServer(server, type, id, title, year, season, episode)
-          .then(res => res || Promise.reject('No result'))
+          .then(res => res || null)
+          .catch(() => null)
       );
 
       const videasyResults = [];
       for (const promise of videasyPromises) {
         try {
           const result = await Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000))]);
-          videasyResults.push(result);
-          if (videasyResults.length >= 3) break;
+          if (result) {
+            videasyResults.push(result);
+            if (videasyResults.length >= 3) break;
+          }
         } catch (e) {
           // Continue to next server
         }
@@ -288,15 +314,18 @@ app.get('/api/cinestream/resolve', async (req, res) => {
   // Priority 1: Race Videasy servers, collect first 3 successful responses
   const videasyPromises = VIDEASY_SERVERS.map(server =>
     scrapeVideasyForServer(server, type, id, title, year, season, episode)
-      .then(res => res || Promise.reject('No result'))
+      .then(res => res || null)
+      .catch(() => null)
   );
 
   const videasyResults = [];
   for (const promise of videasyPromises) {
     try {
       const result = await Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000))]);
-      videasyResults.push(result);
-      if (videasyResults.length >= 3) break; // Stop after 3 successful servers
+      if (result) {
+        videasyResults.push(result);
+        if (videasyResults.length >= 3) break; // Stop after 3 successful servers
+      }
     } catch (e) {
       // Continue to next server
     }
