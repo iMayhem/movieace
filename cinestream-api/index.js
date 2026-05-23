@@ -286,11 +286,7 @@ app.get('/api/cinestream/proxy', async (req, res) => {
         if (trimmed && !trimmed.startsWith('#')) {
           try {
             const absoluteUrl = new URL(trimmed, url).href;
-            if (absoluteUrl.includes('.m3u8') || absoluteUrl.includes('type=hls') || absoluteUrl.includes('.vtt')) {
-                return `http://localhost:3000/api/cinestream/proxy?url=${encodeURIComponent(absoluteUrl)}`;
-            } else {
-                return absoluteUrl; // Direct to CDN! Zero VPS Bandwidth Tunneling!
-            }
+            return `http://localhost:3000/api/cinestream/proxy?url=${encodeURIComponent(absoluteUrl)}`;
           } catch(e) {
             return line;
           }

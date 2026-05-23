@@ -209,11 +209,7 @@ export async function onRequest(context) {
           if (trimmed && !trimmed.startsWith('#')) {
             try {
               const absoluteUrl = new URL(trimmed, proxyUrl).href;
-              if (absoluteUrl.includes('.m3u8') || absoluteUrl.includes('type=hls') || absoluteUrl.includes('.vtt')) {
-                  return `/api/cinestream?proxyUrl=${encodeURIComponent(absoluteUrl)}`;
-              } else {
-                  return absoluteUrl; // Native Direct CDN offload!
-              }
+              return `/api/cinestream?proxyUrl=${encodeURIComponent(absoluteUrl)}`;
             } catch(e) {
               return line;
             }
