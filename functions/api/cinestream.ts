@@ -207,27 +207,6 @@ async function scrapeVideasyForServer(server, type, tmdbId, title, year, season,
   }
   return null;
 }
-          });
-        });
-      }
-
-      if (Array.isArray(result.subtitles)) {
-        result.subtitles.forEach(sub => {
-          captions.push({
-            url: `/api/cinestream?proxyUrl=${encodeURIComponent(sub.url)}`,
-            language: sub.language || 'English',
-            languageCode: sub.languageCode || 'en'
-          });
-        });
-      }
-
-      return { options, captions };
-    }
-  } catch (err) {
-    // Ignore server failures
-  }
-  return null;
-}
 
 export async function onRequest(context) {
   const { request } = context;
@@ -476,16 +455,6 @@ export async function onRequest(context) {
     stream: defaultStream,
     options: options,
     captions: captions
-  }), {
-    headers: {
-      'content-type': 'application/json',
-      'access-control-allow-origin': '*',
-      'cache-control': 'public, max-age=1800' // Cache for 30 minutes
-    }
-  });
-}
-
-
   }), {
     headers: {
       'content-type': 'application/json',
