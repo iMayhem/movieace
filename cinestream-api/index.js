@@ -213,7 +213,12 @@ app.get('/api/cinestream/resolve', async (req, res) => {
         timeout: 4000
       });
       if (searchRes.data && searchRes.data.results && searchRes.data.results.length > 0) {
-        id = String(searchRes.data.results[0].id);
+        // Prefer animation genre (16) to avoid live-action adaptations
+        let mappedResult = searchRes.data.results.find(r => r.genre_ids && r.genre_ids.includes(16));
+        if (!mappedResult) {
+          mappedResult = searchRes.data.results[0];
+        }
+        id = String(mappedResult.id);
         type = 'tv';
         season = '1';
         console.log(`[CineStream Anime Mapping] Mapped title "${title}" to TMDB TV ID: ${id}`);

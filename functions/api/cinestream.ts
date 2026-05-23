@@ -264,7 +264,12 @@ export async function onRequest(context) {
       if (searchRes.ok) {
         const searchData = await searchRes.json();
         if (searchData && searchData.results && searchData.results.length > 0) {
-          id = String(searchData.results[0].id);
+          // Prefer animation genre (16) to avoid live-action adaptations
+          let mappedResult = searchData.results.find(r => r.genre_ids && r.genre_ids.includes(16));
+          if (!mappedResult) {
+            mappedResult = searchData.results[0];
+          }
+          id = String(mappedResult.id);
           type = 'tv';
           season = '1';
         }
