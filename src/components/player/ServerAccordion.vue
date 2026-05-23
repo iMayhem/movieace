@@ -161,10 +161,12 @@ export default defineComponent({
         display: inline-flex;
         align-items: center;
         gap: var(--s-3);
+        flex-shrink: 0;
     }
 
     &__count {
         color: var(--bone-400);
+        white-space: nowrap;
 
         @media (max-width: 540px) {
             display: none;
