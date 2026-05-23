@@ -3,9 +3,9 @@ const services = {
     coreApis: [
         {
             name: 'TMDB API',
-            url: 'https://api.themoviedb.org/3/movie/popular',
+            url: 'https://api.themoviedb.org/3/configuration',
             testType: 'api',
-            requiresAuth: true
+            note: 'Movie/TV database'
         },
         {
             name: 'AniList API',
@@ -116,8 +116,9 @@ const services = {
     backendServices: [
         {
             name: 'Supabase',
-            url: 'https://eeyiragtylotwiozbgqp.supabase.co',
-            testType: 'api'
+            url: 'https://eeyiragtylotwiozbgqp.supabase.co/rest/v1/',
+            testType: 'supabase',
+            note: 'Database & Auth'
         }
     ]
 };
@@ -138,7 +139,63 @@ async function checkService(service) {
         // For embed providers, we just check if the domain is reachable
         // For APIs, we make actual requests
         
-        if (service.testType === 'embed') {
+        if (service.testType === 'supabase') {
+            // Supabase health check - check REST API endpoint
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
+            try {
+                const response = await fetch(service.url, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVleWlyYWd0eWxvdGl3b3piZ3FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNzAyNzYsImV4cCI6MjA5NDk0NjI3Nn0.YB_alc7kt5l09eTfNH0x5q-ayBx-dHS1qE-yzHbRTFg',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVleWlyYWd0eWxvdGl3b3piZ3FwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNzAyNzYsImV4cCI6MjA5NDk0NjI3Nn0.YB_alc7kt5l09eTfNH0x5q-ayBx-dHS1qE-yzHbRTFg'
+                    },
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+                
+                // Supabase returns 200 for successful connection
+                if (response.ok || response.status === 401 || response.status === 400) {
+                    return {
+                        status: 'operational',
+                        responseTime: responseTime,
+                        message: 'Connected'
+                    };
+                } else if (response.status >= 500) {
+                    return {
+                        status: 'down',
+                        responseTime: responseTime,
+                        message: `Server Error ${response.status}`
+                    };
+                } else {
+                    return {
+                        status: 'degraded',
+                        responseTime: responseTime,
+                        message: `HTTP ${response.status}`
+                    };
+                }
+            } catch (error) {
+                clearTimeout(timeoutId);
+                
+                if (error.name === 'AbortError') {
+                    return {
+                        status: 'degraded',
+                        responseTime: 10000,
+                        message: 'Timeout'
+                    };
+                }
+                
+                return {
+                    status: 'down',
+                    responseTime: Math.round(performance.now() - startTime),
+                    message: 'Connection failed'
+                };
+            }
+        } else if (service.testType === 'embed') {
             // Use a simple HEAD request or fetch with no-cors
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
@@ -180,6 +237,7 @@ async function checkService(service) {
             const timeoutId = setTimeout(() => controller.abort(), 10000);
             
             const response = await fetch(service.url, {
+                mode: 'cors',
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
@@ -187,11 +245,18 @@ async function checkService(service) {
             const endTime = performance.now();
             const responseTime = Math.round(endTime - startTime);
             
-            if (response.ok || response.status === 401) { // 401 is ok for auth-required APIs
+            // Accept 200-299, 401 (auth required), 403 (forbidden but server is up)
+            if (response.ok || response.status === 401 || response.status === 403) {
                 return {
                     status: 'operational',
                     responseTime: responseTime,
                     message: `${response.status} OK`
+                };
+            } else if (response.status >= 500) {
+                return {
+                    status: 'down',
+                    responseTime: responseTime,
+                    message: `Server Error ${response.status}`
                 };
             } else {
                 return {
@@ -222,6 +287,12 @@ async function checkService(service) {
                     status: 'operational',
                     responseTime: responseTime,
                     message: 'GraphQL OK'
+                };
+            } else if (response.status >= 500) {
+                return {
+                    status: 'down',
+                    responseTime: responseTime,
+                    message: `Server Error ${response.status}`
                 };
             } else {
                 return {
