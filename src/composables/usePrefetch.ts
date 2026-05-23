@@ -17,7 +17,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 export function usePrefetch() {
   const prefetchStream = async (
     mediaId: string | number,
-    mediaType: 'movie' | 'tv',
+    mediaType: 'movie' | 'tv' | 'anime',
     title?: string,
     year?: number,
     season?: number,
@@ -74,7 +74,7 @@ export function usePrefetch() {
 
   const getCachedStream = (
     mediaId: string | number,
-    mediaType: 'movie' | 'tv',
+    mediaType: 'movie' | 'tv' | 'anime',
     season?: number,
     episode?: number
   ) => {
