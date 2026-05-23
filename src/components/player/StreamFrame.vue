@@ -302,7 +302,6 @@ export default defineComponent({
                 url: videoUrl.value,
                 type: isM3U8 ? 'm3u8' : 'mp4',
                 autoplay: true,
-                autoSize: true,
                 playbackRate: true,
                 aspectRatio: true,
                 setting: true,
