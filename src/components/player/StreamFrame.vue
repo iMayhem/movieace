@@ -73,6 +73,7 @@ import { computed, defineComponent, onMounted, onUnmounted, ref, watch } from 'v
 import { useWebImage } from '../../utils/useWebImage';
 import { useAmbientColor } from '../../composables/useAmbientColor';
 import { startProgressTracking } from '../../composables/useProgress';
+import { usePrefetch } from '../../composables/usePrefetch';
 import Artplayer from 'artplayer';
 import Hls from 'hls.js';
 
@@ -95,6 +96,9 @@ export default defineComponent({
         let artplayerInstance: Artplayer | null = null;
         const isLoading = ref(true);
         const hasError = ref(false);
+
+        // Priority 3: Prefetch optimization
+        const { getCachedStream } = usePrefetch();
 
         // Native streaming states
         const isNative = computed(() => props.embedUrl && (props.embedUrl.startsWith('https://api.moovie.fun') || props.embedUrl.startsWith('NATIVE:')));
@@ -185,6 +189,22 @@ export default defineComponent({
         const resolveStream = async () => {
             if (!isNative.value) return;
 
+            // Priority 3: Check prefetch cache first
+            const cachedData = getCachedStream(
+                props.mediaId,
+                props.mediaType,
+                props.mediaType === 'tv' ? props.season : undefined,
+                props.mediaType === 'tv' ? props.episode : undefined
+            );
+
+            if (cachedData) {
+                console.log('[StreamFrame] Using prefetched stream data');
+                isResolving.value = false;
+                isLoading.value = false;
+                processStreamData(cachedData);
+                return;
+            }
+
             isResolving.value = true;
             resolveError.value = '';
             videoUrl.value = '';
@@ -230,40 +250,7 @@ export default defineComponent({
                     resolveData = await resolveRes.json();
                 }
 
-                if (!resolveData.stream && (!resolveData.options || resolveData.options.length === 0)) {
-                    throw new Error('Streaming resource is currently offline for this item');
-                }
-
-                // Format stream options
-                const streamOptions = resolveData.options || [];
-                resolutions.value = streamOptions.map((opt: any) => ({
-                    label: `${opt.quality || 'Auto'} (${opt.format?.toUpperCase() || 'M3U8'})`,
-                    url: opt.url
-                }));
-
-                const defaultStream = resolveData.stream || streamOptions[0];
-                videoUrl.value = defaultStream.url;
-
-                // Subtitles options mapping
-                const captionOptions = resolveData.captions || [];
-                subtitles.value = captionOptions.map((sub: any, idx: number) => {
-                    let subUrl = sub.url;
-                    if (subUrl.startsWith('/api/cinestream') && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-                        if (subUrl.includes('proxyUrl=')) {
-                            const proxyUrlParam = subUrl.split('proxyUrl=')[1];
-                            subUrl = `http://localhost:3000/api/cinestream/proxy?url=${proxyUrlParam}`;
-                        } else if (subUrl.includes('subUrl=')) {
-                            const subParam = subUrl.split('subUrl=')[1];
-                            subUrl = `http://localhost:3000/api/cinestream/proxy?url=${subParam}`;
-                        }
-                    }
-                    return {
-                        label: sub.language,
-                        src: subUrl,
-                        srclang: sub.languageCode || 'en',
-                        default: idx === 0 || sub.language.toLowerCase() === 'english'
-                    };
-                });
+                processStreamData(resolveData);
 
             } catch (err: any) {
                 resolveError.value = err.message || 'Failed to strike print';
@@ -272,6 +259,44 @@ export default defineComponent({
                 isResolving.value = false;
                 isLoading.value = false;
             }
+        };
+
+        // Helper function to process stream data (used by both cached and fresh data)
+        const processStreamData = (resolveData: any) => {
+            if (!resolveData.stream && (!resolveData.options || resolveData.options.length === 0)) {
+                throw new Error('Streaming resource is currently offline for this item');
+            }
+
+            // Format stream options
+            const streamOptions = resolveData.options || [];
+            resolutions.value = streamOptions.map((opt: any) => ({
+                label: `${opt.quality || 'Auto'} (${opt.format?.toUpperCase() || 'M3U8'})`,
+                url: opt.url
+            }));
+
+            const defaultStream = resolveData.stream || streamOptions[0];
+            videoUrl.value = defaultStream.url;
+
+            // Subtitles options mapping
+            const captionOptions = resolveData.captions || [];
+            subtitles.value = captionOptions.map((sub: any, idx: number) => {
+                let subUrl = sub.url;
+                if (subUrl.startsWith('/api/cinestream') && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+                    if (subUrl.includes('proxyUrl=')) {
+                        const proxyUrlParam = subUrl.split('proxyUrl=')[1];
+                        subUrl = `http://localhost:3000/api/cinestream/proxy?url=${proxyUrlParam}`;
+                    } else if (subUrl.includes('subUrl=')) {
+                        const subParam = subUrl.split('subUrl=')[1];
+                        subUrl = `http://localhost:3000/api/cinestream/proxy?url=${subParam}`;
+                    }
+                }
+                return {
+                    label: sub.language,
+                    src: subUrl,
+                    srclang: sub.languageCode || 'en',
+                    default: idx === 0 || sub.language.toLowerCase() === 'english'
+                };
+            });
         };
 
         const initArtPlayer = () => {

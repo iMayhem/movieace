@@ -255,20 +255,107 @@ export async function onRequest(context) {
     });
   }
 
-  // Scrape concurrently
+  // Priority 4: Progressive Loading - Return first available stream immediately
+  const allOptions = [];
+  const allCaptions = [];
+  let firstStreamReturned = false;
+
+  // Helper to deduplicate and format response
+  const buildResponse = (opts, caps) => {
+    const seenUrls = new Set();
+    const options = opts.filter(opt => {
+      if (seenUrls.has(opt.url)) return false;
+      seenUrls.add(opt.url);
+      return true;
+    });
+
+    const seenSubs = new Set();
+    const captions = caps.filter(sub => {
+      if (seenSubs.has(sub.url)) return false;
+      seenSubs.add(sub.url);
+      return true;
+    });
+
+    return { options, captions };
+  };
+
+  // Priority 1: Fastest Responder Wins - Race condition for quick providers
+  const quickProviders = Promise.race([
+    scrapePlaysrc(type, id, season, episode),
+    scrapeVidflix(type, id, season, episode)
+  ]).catch(() => ({ options: [], captions: [] }));
+
+  const quickResult = await quickProviders;
+  
+  if (quickResult.options.length > 0 && !firstStreamReturned) {
+    // Return immediately with first available stream
+    firstStreamReturned = true;
+    const { options, captions } = buildResponse(quickResult.options, quickResult.captions);
+    
+    // Start background fetching for more options
+    context.waitUntil((async () => {
+      // Continue fetching remaining providers in background
+      const [playsrcData, vidflixData] = await Promise.all([
+        scrapePlaysrc(type, id, season, episode),
+        scrapeVidflix(type, id, season, episode)
+      ]);
+
+      // Priority 1: Race Videasy servers, return first 3 successful responses
+      const videasyPromises = VIDEASY_SERVERS.map(server =>
+        scrapeVideasyForServer(server, type, id, title, year, season, episode)
+          .then(res => res || Promise.reject('No result'))
+      );
+
+      const videasyResults = [];
+      for (const promise of videasyPromises) {
+        try {
+          const result = await Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000))]);
+          videasyResults.push(result);
+          if (videasyResults.length >= 3) break; // Stop after 3 successful servers
+        } catch (e) {
+          // Continue to next server
+        }
+      }
+    })());
+
+    return new Response(JSON.stringify({
+      stream: options[0],
+      options: options,
+      captions: captions
+    }), {
+      headers: {
+        'content-type': 'application/json',
+        'access-control-allow-origin': '*',
+        'cache-control': 'public, max-age=1800' // Cache for 30 minutes
+      }
+    });
+  }
+
+  // Fallback: If quick providers failed, wait for all providers
   const [playsrcData, vidflixData] = await Promise.all([
     scrapePlaysrc(type, id, season, episode),
     scrapeVidflix(type, id, season, episode)
   ]);
 
-  // Scrape Videasy servers in parallel
+  allOptions.push(...playsrcData.options, ...vidflixData.options);
+  allCaptions.push(...playsrcData.captions, ...vidflixData.captions);
+
+  // Priority 1: Race Videasy servers, collect first 3 successful responses
   const videasyPromises = VIDEASY_SERVERS.map(server =>
     scrapeVideasyForServer(server, type, id, title, year, season, episode)
+      .then(res => res || Promise.reject('No result'))
   );
-  const videasyResults = await Promise.all(videasyPromises);
 
-  const allOptions = [...playsrcData.options, ...vidflixData.options];
-  const allCaptions = [...playsrcData.captions, ...vidflixData.captions];
+  const videasyResults = [];
+  for (const promise of videasyPromises) {
+    try {
+      const result = await Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000))]);
+      videasyResults.push(result);
+      if (videasyResults.length >= 3) break; // Stop after 3 successful servers
+    } catch (e) {
+      // Continue to next server
+    }
+  }
 
   videasyResults.forEach(res => {
     if (res) {
@@ -277,21 +364,7 @@ export async function onRequest(context) {
     }
   });
 
-  // Deduplicate options by streaming URL
-  const seenUrls = new Set();
-  const options = allOptions.filter(opt => {
-    if (seenUrls.has(opt.url)) return false;
-    seenUrls.add(opt.url);
-    return true;
-  });
-
-  // Deduplicate subtitles by URL
-  const seenSubs = new Set();
-  const captions = allCaptions.filter(sub => {
-    if (seenSubs.has(sub.url)) return false;
-    seenSubs.add(sub.url);
-    return true;
-  });
+  const { options, captions } = buildResponse(allOptions, allCaptions);
 
   if (options.length === 0) {
     return new Response(JSON.stringify({ error: 'No streamable direct links found for this item.' }), {
@@ -312,7 +385,8 @@ export async function onRequest(context) {
   }), {
     headers: {
       'content-type': 'application/json',
-      'access-control-allow-origin': '*'
+      'access-control-allow-origin': '*',
+      'cache-control': 'public, max-age=1800' // Cache for 30 minutes
     }
   });
 }

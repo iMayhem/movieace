@@ -62,7 +62,14 @@
                 </ul>
 
                 <div class="masthead__actions">
-                    <LmButton variant="primary" size="lg" :to="playRoute" :aria-label="playLabel">
+                    <LmButton 
+                        variant="primary" 
+                        size="lg" 
+                        :to="playRoute" 
+                        :aria-label="playLabel"
+                        @mouseenter="handlePlayHover"
+                        @focus="handlePlayHover"
+                    >
                         <template #leading>
                             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
                                 <path fill="currentColor" d="M8 5v14l11-7z"/>
@@ -132,6 +139,7 @@ import TrailerIframe from '../hero/TrailerIframe.vue';
 import { isInWatchlist, toggleWatchlistItem } from '../../composables/useWatchlist';
 import { useAmbientColor } from '../../composables/useAmbientColor';
 import { useTrailerEmbed } from '../../composables/useTrailerEmbed';
+import { usePrefetch } from '../../composables/usePrefetch';
 
 export default defineComponent({
     name: 'TitleMasthead',
@@ -160,6 +168,18 @@ export default defineComponent({
         const rootRef = ref<HTMLElement | null>(null);
         const ambientPath = computed(() => props.backdropPath || props.posterPath);
         useAmbientColor(ambientPath, rootRef);
+
+        // Priority 3: Prefetch stream data on hover
+        const { prefetchStream } = usePrefetch();
+        const handlePlayHover = () => {
+            console.log('[TitleMasthead] Prefetching stream on hover');
+            prefetchStream(
+                props.id,
+                props.type,
+                props.title,
+                year.value || undefined
+            );
+        };
 
         const backdropUrl = computed(() => {
             if (!props.backdropPath) return '';
@@ -238,7 +258,8 @@ export default defineComponent({
             onIframeLoad,
             togglePause,
             toggleMute,
-            partyHref
+            partyHref,
+            handlePlayHover
         };
     }
 });
