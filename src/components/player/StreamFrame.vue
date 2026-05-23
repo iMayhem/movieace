@@ -108,6 +108,12 @@ export default defineComponent({
         const isResolving = ref(false);
         const resolveError = ref('');
 
+        // Auto-fallback mechanism
+        const currentStreamIndex = ref(0);
+        const isUserManualSwitch = ref(false); // Track if user manually changed stream
+        let bufferingTimeout: ReturnType<typeof setTimeout> | null = null;
+        let hasPlayedSuccessfully = ref(false); // Track if video has started playing
+
         const ambientPath = computed(() => props.backdropPath || props.posterPath || null);
         useAmbientColor(ambientPath, rootRef);
 
@@ -274,6 +280,11 @@ export default defineComponent({
                 url: opt.url
             }));
 
+            // Reset auto-fallback state for new content
+            currentStreamIndex.value = 0;
+            isUserManualSwitch.value = false;
+            hasPlayedSuccessfully.value = false;
+
             const defaultStream = resolveData.stream || streamOptions[0];
             videoUrl.value = defaultStream.url;
 
@@ -297,6 +308,32 @@ export default defineComponent({
                     default: idx === 0 || sub.language.toLowerCase() === 'english'
                 };
             });
+        };
+
+        // Auto-fallback: Switch to next stream if current one is buffering
+        const tryNextStream = () => {
+            if (isUserManualSwitch.value || hasPlayedSuccessfully.value) {
+                console.log('[AUTO-FALLBACK] Skipping auto-switch (user control or already playing)');
+                return;
+            }
+
+            if (currentStreamIndex.value < resolutions.value.length - 1) {
+                currentStreamIndex.value++;
+                const nextStream = resolutions.value[currentStreamIndex.value];
+                console.log(`[AUTO-FALLBACK] Switching to stream ${currentStreamIndex.value + 1}/${resolutions.value.length}: ${nextStream.label}`);
+                
+                videoUrl.value = nextStream.url;
+                
+                // Show notification to user
+                if (artplayerInstance) {
+                    artplayerInstance.notice.show = `Switching to backup stream (${currentStreamIndex.value + 1}/${resolutions.value.length})...`;
+                }
+            } else {
+                console.log('[AUTO-FALLBACK] No more streams available');
+                if (artplayerInstance) {
+                    artplayerInstance.notice.show = 'All streams failed. Please try a different server.';
+                }
+            }
         };
 
         const initArtPlayer = () => {
@@ -394,8 +431,54 @@ export default defineComponent({
                 ]
             });
 
+            // Auto-fallback: Monitor buffering and playing events
+            artplayerInstance.on('video:waiting', () => {
+                if (hasPlayedSuccessfully.value || isUserManualSwitch.value) {
+                    // Normal buffering during playback, don't auto-switch
+                    return;
+                }
+
+                console.log('[AUTO-FALLBACK] Video buffering detected, starting 2s timeout...');
+                
+                // Clear any existing timeout
+                if (bufferingTimeout) {
+                    clearTimeout(bufferingTimeout);
+                }
+
+                // Set 2-second timeout to switch to next stream
+                bufferingTimeout = setTimeout(() => {
+                    console.log('[AUTO-FALLBACK] Buffering timeout reached, trying next stream...');
+                    tryNextStream();
+                }, 2000);
+            });
+
+            artplayerInstance.on('video:playing', () => {
+                console.log('[AUTO-FALLBACK] Video playing successfully');
+                hasPlayedSuccessfully.value = true;
+                
+                // Clear buffering timeout if video starts playing
+                if (bufferingTimeout) {
+                    clearTimeout(bufferingTimeout);
+                    bufferingTimeout = null;
+                }
+            });
+
+            artplayerInstance.on('video:canplay', () => {
+                // Clear buffering timeout when video is ready to play
+                if (bufferingTimeout) {
+                    clearTimeout(bufferingTimeout);
+                    bufferingTimeout = null;
+                }
+            });
+
+            artplayerInstance.on('video:error', () => {
+                console.log('[AUTO-FALLBACK] Video error detected, trying next stream...');
+                tryNextStream();
+            });
+
             artplayerInstance.on('quality', (quality: any) => {
-                console.log('[ARTPLAYER] Quality changed:', quality.html);
+                console.log('[ARTPLAYER] Quality changed by user:', quality.html);
+                isUserManualSwitch.value = true; // User manually changed quality
                 videoUrl.value = quality.url;
             });
         };
@@ -464,6 +547,10 @@ export default defineComponent({
 
         onUnmounted(() => {
             stopMessages();
+            if (bufferingTimeout) {
+                clearTimeout(bufferingTimeout);
+                bufferingTimeout = null;
+            }
             if (artplayerInstance) {
                 artplayerInstance.destroy();
                 artplayerInstance = null;
