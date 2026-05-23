@@ -60,18 +60,7 @@
                     </svg>
                 </router-link>
 
-                <!-- Settings Button -->
-                <button
-                    class="site-header__icon-btn"
-                    aria-label="Settings"
-                    @click="isSettingsModalOpen = true"
-                    title="Settings"
-                >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M12 1v6m0 6v6m5.2-13.2-4.2 4.2m0 6-4.2 4.2M23 12h-6m-6 0H1m18.2 5.2-4.2-4.2m0-6-4.2-4.2" />
-                    </svg>
-                </button>
+
 
                 <!-- Watch Together Party Lobby Link -->
                 <a
@@ -143,10 +132,7 @@
                     <span class="site-header__drawer-label">Watch Together</span>
                 </a>
 
-                <button class="site-header__drawer-link" @click="isSettingsModalOpen = true; drawerOpen = false">
-                    <span class="eyebrow site-header__drawer-num">⚙</span>
-                    <span class="site-header__drawer-label">Settings</span>
-                </button>
+
 
                 <div v-if="currentUser" class="site-header__drawer-link" style="justify-content: space-between;">
                     <span class="site-header__drawer-label" style="color: var(--ember); font-weight: 600;">
@@ -170,8 +156,7 @@
         <!-- Authentication Modal Dialog -->
         <AuthModal :is-open="isAuthModalOpen" @close="isAuthModalOpen = false" />
         
-        <!-- Settings Modal Dialog -->
-        <SettingsModal :is-open="isSettingsModalOpen" @close="isSettingsModalOpen = false" />
+
     </header>
 </template>
 
@@ -180,7 +165,7 @@ import { defineComponent, onMounted, onBeforeUnmount, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import LmDrawer from '../primitives/Drawer.vue';
 import AuthModal from './AuthModal.vue';
-import SettingsModal from './SettingsModal.vue';
+
 import { openPalette } from '../../composables/useCommandPalette';
 import { getCurrentUser, logoutUser } from '../../lib/auth';
 import { useActiveVehicle } from '../../composables/useActiveVehicle';
@@ -223,7 +208,7 @@ const primaryNav: NavItem[] = [
 
 export default defineComponent({
     name: 'SiteHeader',
-    components: { LmDrawer, AuthModal, SettingsModal },
+    components: { LmDrawer, AuthModal },
     setup() {
         const route = useRoute();
         const scrolled = ref(false);
@@ -239,7 +224,7 @@ export default defineComponent({
         ];
 
         const isAuthModalOpen = ref(false);
-        const isSettingsModalOpen = ref(false);
+
         const currentUser = ref<string | null>(null);
 
         const updateCurrentUser = () => {
@@ -285,7 +270,7 @@ export default defineComponent({
             openPalette,
             openFromDrawer,
             isAuthModalOpen,
-            isSettingsModalOpen,
+
             currentUser,
             handleLogout,
             activeVehicle,
