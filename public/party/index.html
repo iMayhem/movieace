@@ -1765,7 +1765,7 @@
 
         // Available Stream Servers
         const serversList = [
-            { id: 'cinestream', name: 'CineStream (Direct)', movie: `${window.location.origin}/player.html?type=movie&id={tmdbId}`, tv: `${window.location.origin}/player.html?type=tv&id={tmdbId}&season={season}&episode={episode}` },
+            { id: 'cinestream', name: 'CineStream (Direct)', movie: 'NATIVE:/api/cinestream?type=movie&id={tmdbId}', tv: 'NATIVE:/api/cinestream?type=tv&id={tmdbId}&season={season}&episode={episode}' },
             { id: 'vidlink', name: 'VidLink', movie: 'https://vidlink.pro/movie/{tmdbId}?primaryColor=6366f1', tv: 'https://vidlink.pro/tv/{tmdbId}/{season}/{episode}?primaryColor=6366f1' },
             { id: 'videasy', name: 'VidEasy', movie: 'https://player.videasy.net/movie/{tmdbId}?color=6366f1', tv: 'https://player.videasy.net/tv/{tmdbId}/{season}/{episode}?color=6366f1' },
             { id: 'vidsrc', name: 'VidSrc (to)', movie: 'https://vidsrc.to/embed/movie/{tmdbId}', tv: 'https://vidsrc.to/embed/tv/{tmdbId}/{season}/{episode}' },
