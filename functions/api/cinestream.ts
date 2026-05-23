@@ -13,18 +13,10 @@ async function scrapePlaysrc(type, tmdbId, season, episode) {
       ? `https://api.madplay.site/api/playsrc?id=${tmdbId}&token=direct`
       : `https://madplay.site/api/movies/holly?id=${tmdbId}&season=${season}&episode=${episode}&token=direct`;
 
-    // Add timeout using AbortController
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-
     const res = await fetch(url, {
       headers: { 'User-Agent': USER_AGENT },
-      signal: controller.signal,
       cf: { cacheTtl: 3600 }
     });
-    
-    clearTimeout(timeoutId);
-    
     if (!res.ok) return { options: [], captions: [] };
 
     const list = await res.json();
@@ -47,8 +39,6 @@ async function scrapePlaysrc(type, tmdbId, season, episode) {
 
     return { options, captions };
   } catch (err) {
-    // Log error for debugging (will be visible in Cloudflare logs)
-    console.error('[Playsrc Error]', err.message);
     return { options: [], captions: [] };
   }
 }
@@ -60,18 +50,10 @@ async function scrapeVidflix(type, tmdbId, season, episode) {
       ? `https://madplay.site/api/movies/holly?id=${tmdbId}&token=direct`
       : `https://madplay.site/api/movies/holly?id=${tmdbId}&season=${season}&episode=${episode}&token=direct`;
 
-    // Add timeout using AbortController
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-
     const res = await fetch(url, {
       headers: { 'User-Agent': USER_AGENT },
-      signal: controller.signal,
       cf: { cacheTtl: 3600 }
     });
-    
-    clearTimeout(timeoutId);
-    
     if (!res.ok) return { options: [], captions: [] };
 
     const list = await res.json();
@@ -99,7 +81,6 @@ async function scrapeVidflix(type, tmdbId, season, episode) {
 
     return { options, captions };
   } catch (err) {
-    console.error('[Vidflix Error]', err.message);
     return { options: [], captions: [] };
   }
 }
@@ -136,39 +117,21 @@ async function scrapeVideasyForServer(server, type, tmdbId, title, year, season,
       ? `https://api.videasy.net/${server}/sources-with-title?title=${encTitle}&mediaType=movie&year=${year}&tmdbId=${tmdbId}`
       : `https://api.videasy.net/${server}/sources-with-title?title=${encTitle}&mediaType=tv&year=${year}&tmdbId=${tmdbId}&episodeId=${episode}&seasonId=${season}`;
 
-    // Add timeout for Videasy API
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 second timeout
-
-    const res = await fetch(url, { 
-      headers, 
-      signal: controller.signal,
-      cf: { cacheTtl: 3600 } 
-    });
-    
-    clearTimeout(timeoutId);
-    
+    const res = await fetch(url, { headers, cf: { cacheTtl: 3600 } });
     if (!res.ok) return null;
 
     const encryptedText = await res.text();
     if (!encryptedText) return null;
 
-    // Send encrypted text to dec-videasy endpoint with timeout
-    const decController = new AbortController();
-    const decTimeoutId = setTimeout(() => decController.abort(), 5000); // 5 second timeout for decryption
-    
+    // Send encrypted text to dec-videasy endpoint
     const decRes = await fetch('https://enc-dec.app/api/dec-videasy', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      signal: decController.signal,
       body: JSON.stringify({
         text: encryptedText,
         id: Number(tmdbId)
       })
     });
-    
-    clearTimeout(decTimeoutId);
-    
     if (!decRes.ok) return null;
 
     const decData = await decRes.json();
@@ -202,8 +165,7 @@ async function scrapeVideasyForServer(server, type, tmdbId, title, year, season,
       return { options, captions };
     }
   } catch (err) {
-    // Silently fail for individual Videasy servers
-    console.error(`[Videasy ${server} Error]`, err.message);
+    // Ignore server failures
   }
   return null;
 }
@@ -341,58 +303,45 @@ export async function onRequest(context) {
     return { options, captions };
   };
 
-  // Priority 1: Try quick providers with Promise.allSettled (not race) for better reliability
-  const quickProviders = await Promise.allSettled([
+  // Priority 1: Fastest Responder Wins - Race condition for quick providers
+  const quickProviders = Promise.race([
     scrapePlaysrc(type, id, season, episode),
     scrapeVidflix(type, id, season, episode)
-  ]);
+  ]).catch(() => ({ options: [], captions: [] }));
 
-  // Collect results from successful quick providers
-  const quickOptions = [];
-  const quickCaptions = [];
+  const quickResult = await quickProviders;
   
-  quickProviders.forEach(result => {
-    if (result.status === 'fulfilled' && result.value) {
-      quickOptions.push(...result.value.options);
-      quickCaptions.push(...result.value.captions);
-    }
-  });
-  
-  // If we got quick results, return immediately
-  if (quickOptions.length > 0 && !firstStreamReturned) {
+  if (quickResult.options.length > 0 && !firstStreamReturned) {
+    // Return immediately with first available stream
     firstStreamReturned = true;
-    const { options, captions } = buildResponse(quickOptions, quickCaptions);
+    const { options, captions } = buildResponse(quickResult.options, quickResult.captions);
     
-    console.log(`[CineStream] Quick response with ${options.length} options from fast providers`);
-    
-    // Start background fetching for Videasy servers (don't await)
+    // Start background fetching for more options
     context.waitUntil((async () => {
-      try {
-        // Race Videasy servers with 3-second timeout per server
-        const videasyPromises = VIDEASY_SERVERS.map(server =>
-          Promise.race([
-            scrapeVideasyForServer(server, type, id, title, year, season, episode),
-            new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000))
-          ])
-            .then(res => res || null)
-            .catch(() => null)
-        );
+      // Continue fetching remaining providers in background
+      const [playsrcData, vidflixData] = await Promise.all([
+        scrapePlaysrc(type, id, season, episode),
+        scrapeVidflix(type, id, season, episode)
+      ]);
 
-        const videasyResults = [];
-        for (const promise of videasyPromises) {
-          try {
-            const result = await promise;
-            if (result) {
-              videasyResults.push(result);
-              if (videasyResults.length >= 3) break; // Stop after 3 successful servers
-            }
-          } catch (e) {
-            // Continue to next server
+      // Priority 1: Race Videasy servers, return first 3 successful responses
+      const videasyPromises = VIDEASY_SERVERS.map(server =>
+        scrapeVideasyForServer(server, type, id, title, year, season, episode)
+          .then(res => res || null)
+          .catch(() => null)
+      );
+
+      const videasyResults = [];
+      for (const promise of videasyPromises) {
+        try {
+          const result = await Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000))]);
+          if (result) {
+            videasyResults.push(result);
+            if (videasyResults.length >= 3) break; // Stop after 3 successful servers
           }
+        } catch (e) {
+          // Continue to next server
         }
-        console.log(`[CineStream] Background fetch completed with ${videasyResults.length} Videasy servers`);
-      } catch (e) {
-        console.error('[CineStream Background Error]', e);
       }
     })());
 
@@ -409,47 +358,55 @@ export async function onRequest(context) {
     });
   }
 
-  // Fallback: If quick providers failed, try Videasy servers
-  console.log('[CineStream] Quick providers failed, trying Videasy servers...');
-  
-  // Try first 5 Videasy servers in parallel with timeout
-  const videasyPromises = VIDEASY_SERVERS.slice(0, 5).map(server =>
-    Promise.race([
-      scrapeVideasyForServer(server, type, id, title, year, season, episode),
-      new Promise((_, reject) => setTimeout(() => reject('timeout'), 4000))
-    ])
+  // Fallback: If quick providers failed, wait for all providers
+  const [playsrcData, vidflixData] = await Promise.all([
+    scrapePlaysrc(type, id, season, episode),
+    scrapeVidflix(type, id, season, episode)
+  ]);
+
+  allOptions.push(...playsrcData.options, ...vidflixData.options);
+  allCaptions.push(...playsrcData.captions, ...vidflixData.captions);
+
+  // Priority 1: Race Videasy servers, collect first 3 successful responses
+  const videasyPromises = VIDEASY_SERVERS.map(server =>
+    scrapeVideasyForServer(server, type, id, title, year, season, episode)
       .then(res => res || null)
       .catch(() => null)
   );
 
-  const videasyResults = await Promise.allSettled(videasyPromises);
-  
-  videasyResults.forEach(result => {
-    if (result.status === 'fulfilled' && result.value) {
-      allOptions.push(...result.value.options);
-      allCaptions.push(...result.value.captions);
+  const videasyResults = [];
+  for (const promise of videasyPromises) {
+    try {
+      const result = await Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000))]);
+      if (result) {
+        videasyResults.push(result);
+        if (videasyResults.length >= 3) break; // Stop after 3 successful servers
+      }
+    } catch (e) {
+      // Continue to next server
+    }
+  }
+
+  videasyResults.forEach(res => {
+    if (res) {
+      allOptions.push(...res.options);
+      allCaptions.push(...res.captions);
     }
   });
 
   const { options, captions } = buildResponse(allOptions, allCaptions);
 
   if (options.length === 0) {
-    console.error('[CineStream] All providers failed');
-    return new Response(JSON.stringify({ 
-      error: 'No streamable direct links found for this item. All providers are currently unavailable. Please try again in a moment.' 
-    }), {
-      status: 503, // Service Unavailable (temporary)
+    return new Response(JSON.stringify({ error: 'No streamable direct links found for this item.' }), {
+      status: 404,
       headers: {
         'content-type': 'application/json',
-        'access-control-allow-origin': '*',
-        'retry-after': '5' // Suggest retry after 5 seconds
+        'access-control-allow-origin': '*'
       }
     });
   }
 
   const defaultStream = options[0];
-
-  console.log(`[CineStream] Fallback response with ${options.length} options from Videasy`);
 
   return new Response(JSON.stringify({
     stream: defaultStream,
