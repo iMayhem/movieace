@@ -17,7 +17,6 @@
                     <span class="server-accordion__dot" aria-hidden="true" />
                     {{ activeServerName }}
                 </LmPill>
-                <span class="meta server-accordion__count">{{ servers.length }} mirrors</span>
                 <span class="server-accordion__chev" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
                         <path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round" />
