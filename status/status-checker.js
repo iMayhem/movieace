@@ -21,7 +21,7 @@ const services = {
     embedProviders: [
         {
             name: 'CineStream (Direct)',
-            url: window.location.origin + '/player.html',
+            url: window.location.origin + '/player.html?type=movie&id=502356',
             testType: 'embed',
             note: 'Internal player'
         },
