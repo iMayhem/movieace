@@ -120,6 +120,14 @@ const services = {
             testType: 'supabase',
             note: 'Database & Auth'
         }
+    ],
+    serverMetrics: [
+        {
+            name: 'Oracle Cloud Server',
+            url: '/api/server-metrics', // You'll need to create this endpoint
+            testType: 'server-metrics',
+            note: 'Main hosting server'
+        }
     ]
 };
 

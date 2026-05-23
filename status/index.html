@@ -316,6 +316,113 @@
             color: var(--bone-200);
         }
 
+        /* Server Metrics Display */
+        .server-metrics {
+            background: var(--surface);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-md);
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            margin-bottom: 1rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.25rem;
+            margin-top: 1rem;
+        }
+
+        .metric-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--rule);
+            border-radius: var(--r-sm);
+            padding: 1rem;
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--bone-400);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: var(--bone-50);
+        }
+
+        .metric-subtext {
+            font-size: 0.8rem;
+            color: var(--bone-500);
+            margin-top: 0.25rem;
+        }
+
+        .metric-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--r-pill);
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .metric-bar-fill {
+            height: 100%;
+            border-radius: var(--r-pill);
+            transition: width 0.5s ease, background-color 0.3s ease;
+        }
+
+        .metric-bar-fill.low {
+            background: var(--green);
+        }
+
+        .metric-bar-fill.medium {
+            background: var(--yellow);
+        }
+
+        .metric-bar-fill.high {
+            background: var(--red);
+        }
+
+        .server-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.75rem;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: var(--r-sm);
+            margin-bottom: 1rem;
+        }
+
+        .server-info-item {
+            font-size: 0.85rem;
+        }
+
+        .server-info-label {
+            color: var(--bone-500);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .server-info-value {
+            color: var(--bone-200);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            margin-top: 0.15rem;
+        }
+
         /* Loading Spinner */
         .spinner {
             width: 16px;
@@ -513,6 +620,15 @@
             <div class="services-grid" id="backend-services"></div>
         </section>
 
+        <!-- Server Metrics -->
+        <section class="category">
+            <div class="category-header">
+                <span class="category-icon">🖥️</span>
+                <h2 class="category-title">Oracle Cloud Server</h2>
+            </div>
+            <div id="server-metrics-container"></div>
+        </section>
+
         <!-- Last Updated -->
         <div class="last-updated">
             Last updated: <strong id="last-updated-time">-</strong>
@@ -529,5 +645,6 @@
     </button>
 
     <script src="status-checker.js"></script>
+    <script src="server-metrics.js"></script>
 </body>
 </html>
