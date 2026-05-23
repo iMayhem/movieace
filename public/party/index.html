@@ -12,8 +12,8 @@
     <!-- Supabase JS Client CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- CineStream native player (Watch Together) -->
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.16/dist/hls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/artplayer@5.4.0/dist/artplayer.js"></script>
     <link rel="stylesheet" href="/artplayer-compact.css">
 
     <style>
@@ -2259,9 +2259,12 @@
             if (!art || typeof art.cssVar !== 'function') return;
             art.cssVar('--art-control-height', '34px');
             art.cssVar('--art-control-icon-size', '20px');
+            art.cssVar('--art-control-icon-scale', '0.92');
             art.cssVar('--art-bottom-gap', '0px');
             art.cssVar('--art-progress-height', '3px');
             art.cssVar('--art-bottom-offset', '0px');
+            art.cssVar('--art-padding', '8px');
+            art.cssVar('--art-bottom-height', '37px');
         }
 
         function tryNextPartyStream() {

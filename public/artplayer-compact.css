@@ -9,15 +9,20 @@
     --art-progress-top-gap: 0px;
     --art-padding: 8px;
     --art-mini-progress-height: 2px;
+    /* Total bottom chrome = seek bar + control row (matches main site) */
+    --art-bottom-height: calc(var(--art-control-height) + var(--art-progress-height));
 }
 
 .art-video-player .art-bottom {
-    padding-bottom: 0 !important;
+    height: var(--art-bottom-height) !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 .art-video-player .art-controls {
     height: var(--art-control-height) !important;
     min-height: var(--art-control-height) !important;
+    max-height: var(--art-control-height) !important;
     padding: 0 10px !important;
     background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.88) 100%) !important;
 }
@@ -25,6 +30,8 @@
 .art-video-player .art-control-progress {
     bottom: var(--art-control-height) !important;
     height: var(--art-progress-height) !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 .art-video-player .art-control-progress:hover {
@@ -53,8 +60,29 @@
     bottom: calc(var(--art-control-height) + 14px) !important;
 }
 
-/* Watch Together: native player fills the stretched stage */
-#party-native-player .art-video-player {
+/* Watch Together: player shell fills stage; controls pin to bottom like main site */
+body.room-view-active #party-native-stage {
+    position: absolute;
+    inset: 0;
+}
+
+body.room-view-active #party-native-player {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
+}
+
+body.room-view-active #party-native-player .art-video-player {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+body.room-view-active #party-native-player .art-video-player .art-bottom {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }

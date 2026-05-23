@@ -96,7 +96,7 @@
             </section>
 
             <p class="watch-stage__disclaimer meta">
-                Streams are mirrored from third-party providers. Movieace does not host video files.
+                Streams are mirrored from third-party providers. moovie does not host video files.
             </p>
         </main>
     </div>

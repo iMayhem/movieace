@@ -560,9 +560,12 @@ export default defineComponent({
         const applyArtplayerCompactUi = (art: Artplayer) => {
             art.cssVar('--art-control-height', '34px');
             art.cssVar('--art-control-icon-size', '20px');
+            art.cssVar('--art-control-icon-scale', '0.92');
             art.cssVar('--art-bottom-gap', '0px');
             art.cssVar('--art-progress-height', '3px');
             art.cssVar('--art-bottom-offset', '0px');
+            art.cssVar('--art-padding', '8px');
+            art.cssVar('--art-bottom-height', '37px');
         };
 
         watch(videoUrl, (next) => {
