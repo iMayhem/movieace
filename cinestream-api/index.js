@@ -256,27 +256,43 @@ app.get('/api/cinestream/resolve', async (req, res) => {
     return { options, captions };
   };
 
-  // Priority 1: Fastest Responder Wins - Race condition for quick providers
-  const quickProviders = Promise.race([
+  // Priority 1: Try quick providers with Promise.allSettled (better than race)
+  const quickProviders = await Promise.allSettled([
     scrapePlaysrc(type, id, season, episode),
     scrapeVidflix(type, id, season, episode)
-  ]).catch(() => ({ options: [], captions: [] }));
+  ]);
 
-  const quickResult = await quickProviders;
+  // Collect ALL successful results from quick providers
+  const quickOptions = [];
+  const quickCaptions = [];
   
-  if (quickResult.options.length > 0 && !firstStreamReturned) {
+  quickProviders.forEach(result => {
+    if (result.status === 'fulfilled' && result.value && result.value.options) {
+      quickOptions.push(...result.value.options);
+      quickCaptions.push(...result.value.captions);
+    }
+  });
+  
+  if (quickOptions.length > 0 && !firstStreamReturned) {
     // Return immediately with first available stream
     firstStreamReturned = true;
-    const { options, captions } = buildResponse(quickResult.options, quickResult.captions);
+    const { options, captions } = buildResponse(quickOptions, quickCaptions);
     
     console.log(`[CineStream] Quick response with ${options.length} options`);
     
     // Continue fetching remaining providers in background (don't await)
     (async () => {
-      const [playsrcData, vidflixData] = await Promise.all([
-        scrapePlaysrc(type, id, season, episode),
-        scrapeVidflix(type, id, season, episode)
-      ]);
+      // Try Videasy servers in background for more options
+      const videasyPromises = VIDEASY_SERVERS.slice(0, 5).map(server =>
+        scrapeVideasyForServer(server, type, id, title, year, season, episode)
+          .then(res => res || null)
+          .catch(() => null)
+      );
+
+      const videasyResults = await Promise.allSettled(videasyPromises);
+      const successCount = videasyResults.filter(r => r.status === 'fulfilled' && r.value).length;
+      console.log(`[CineStream] Background fetch completed with ${successCount} Videasy servers`);
+    })();
 
       // Priority 1: Race Videasy servers, return first 3 successful responses
       const videasyPromises = VIDEASY_SERVERS.map(server =>
@@ -307,46 +323,32 @@ app.get('/api/cinestream/resolve', async (req, res) => {
     });
   }
 
-  // Fallback: If quick providers failed, wait for all providers
-  const [playsrcData, vidflixData] = await Promise.all([
-    scrapePlaysrc(type, id, season, episode),
-    scrapeVidflix(type, id, season, episode)
-  ]);
-
-  allOptions.push(...playsrcData.options, ...vidflixData.options);
-  allCaptions.push(...playsrcData.captions, ...vidflixData.captions);
-
-  // Priority 1: Race Videasy servers, collect first 3 successful responses
-  const videasyPromises = VIDEASY_SERVERS.map(server =>
+  // Fallback: If quick providers failed, try Videasy servers immediately
+  console.log('[CineStream] Quick providers failed, trying Videasy servers...');
+  
+  // Try first 5 Videasy servers in parallel (faster than all 14)
+  const videasyPromises = VIDEASY_SERVERS.slice(0, 5).map(server =>
     scrapeVideasyForServer(server, type, id, title, year, season, episode)
       .then(res => res || null)
       .catch(() => null)
   );
 
-  const videasyResults = [];
-  for (const promise of videasyPromises) {
-    try {
-      const result = await Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000))]);
-      if (result) {
-        videasyResults.push(result);
-        if (videasyResults.length >= 3) break; // Stop after 3 successful servers
-      }
-    } catch (e) {
-      // Continue to next server
-    }
-  }
-
-  videasyResults.forEach(res => {
-    if (res) {
-      allOptions.push(...res.options);
-      allCaptions.push(...res.captions);
+  const videasyResults = await Promise.allSettled(videasyPromises);
+  
+  videasyResults.forEach(result => {
+    if (result.status === 'fulfilled' && result.value) {
+      allOptions.push(...result.value.options);
+      allCaptions.push(...result.value.captions);
     }
   });
 
   const { options, captions } = buildResponse(allOptions, allCaptions);
 
   if (options.length === 0) {
-    return res.status(404).json({ error: 'No streamable direct links found for this item.' });
+    console.error('[CineStream] All providers failed - Playsrc, Vidflix, and first 5 Videasy servers');
+    return res.status(503).json({ 
+      error: 'No streamable direct links found for this item. All providers are currently unavailable. Please try again in a moment.' 
+    });
   }
 
   // Set the first source as default stream
