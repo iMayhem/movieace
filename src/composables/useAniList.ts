@@ -270,6 +270,7 @@ export function useAniList() {
                 }
                 type
                 format
+                episodes
                 seasonYear
                 coverImage {
                   large

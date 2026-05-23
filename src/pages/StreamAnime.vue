@@ -385,6 +385,13 @@ export default defineComponent({
             for (const edge of edges) {
                 const node = edge.node;
                 if (node.type === 'ANIME' && (edge.relationType === 'PREQUEL' || edge.relationType === 'SEQUEL')) {
+                    // Exclude non-serial formats and one-shot specials (like "Monsters" which has 1 episode)
+                    if (node.format === 'MOVIE' || node.format === 'SPECIAL' || node.format === 'MUSIC') {
+                        continue;
+                    }
+                    if (node.episodes !== undefined && node.episodes !== null && node.episodes <= 2) {
+                        continue;
+                    }
                     list.push({
                         id: node.id,
                         title: node.title.english || node.title.romaji || node.title.native,
