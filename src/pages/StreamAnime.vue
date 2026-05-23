@@ -272,7 +272,6 @@ export default defineComponent({
         const searchQuery = ref<string>('');
 
         const availableServers: Server[] = [
-            { name: 'CineStream (Direct)', urlTemplate: 'NATIVE:/api/cinestream?type=anime&id={id}&episode={episode}&title={title}' },
             { name: 'AnimePlay CFD', urlTemplate: 'https://animeplay.cfd/stream/ani/{id}/{episode}/{lang}' },
             { name: 'MegaPlay', urlTemplate: 'https://megaplay.buzz/stream/ani/{id}/{episode}/{lang}' },
             { name: 'Videasy', urlTemplate: 'https://player.videasy.net/anime/{id}/{episode}?color=E05A47&autoplayNextEpisode=true&overlay=true' }
@@ -362,8 +361,7 @@ export default defineComponent({
                 .replace('{id}', String(animeId.value))
                 .replace('{malId}', malId)
                 .replace('{episode}', String(currentEpisode.value))
-                .replace('{lang}', activeLanguage.value)
-                .replace('{title}', encodeURIComponent(animeTitle.value));
+                .replace('{lang}', activeLanguage.value);
         });
 
         const partyHref = computed(() => {
