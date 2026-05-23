@@ -320,18 +320,21 @@ export default defineComponent({
             // First, try different qualities of the same stream
             if (artplayerInstance && artplayerInstance.quality && artplayerInstance.quality.length > 1) {
                 const currentQuality = artplayerInstance.quality.find((q: any) => q.default);
-                const currentIndex = artplayerInstance.quality.indexOf(currentQuality);
                 
-                // Try next quality in the same stream
-                if (currentIndex < artplayerInstance.quality.length - 1) {
-                    const nextQuality = artplayerInstance.quality[currentIndex + 1];
-                    console.log(`[AUTO-FALLBACK] Switching to next quality: ${nextQuality.html}`);
+                if (currentQuality) {
+                    const currentIndex = artplayerInstance.quality.indexOf(currentQuality);
                     
-                    if (artplayerInstance) {
-                        artplayerInstance.notice.show = `Switching to ${nextQuality.html}...`;
-                        artplayerInstance.switchQuality(nextQuality.url);
+                    // Try next quality in the same stream
+                    if (currentIndex < artplayerInstance.quality.length - 1) {
+                        const nextQuality = artplayerInstance.quality[currentIndex + 1];
+                        console.log(`[AUTO-FALLBACK] Switching to next quality: ${nextQuality.html}`);
+                        
+                        if (artplayerInstance) {
+                            artplayerInstance.notice.show = `Switching to ${nextQuality.html}...`;
+                            artplayerInstance.switchQuality(nextQuality.url);
+                        }
+                        return;
                     }
-                    return;
                 }
             }
 
