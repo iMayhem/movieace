@@ -74,6 +74,7 @@ import { useWebImage } from '../../utils/useWebImage';
 import { useAmbientColor } from '../../composables/useAmbientColor';
 import { startProgressTracking } from '../../composables/useProgress';
 import Artplayer from 'artplayer';
+import Hls from 'hls.js';
 
 export default defineComponent({
     name: 'StreamFrame',
@@ -197,9 +198,9 @@ export default defineComponent({
                 if (props.embedUrl.startsWith('NATIVE:')) {
                     let cleanUrl = props.embedUrl.substring(7); // Strip 'NATIVE:'
                     
-                    // If in local development, route to VPS scraper for testing
+                    // If in local development, route to local scraper running on port 3000
                     if (cleanUrl.startsWith('/api/cinestream') && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-                        cleanUrl = `http://80.225.227.41/api/cinestream/resolve${cleanUrl.substring(15)}`;
+                        cleanUrl = `http://localhost:3000/api/cinestream/resolve${cleanUrl.substring(15)}`;
                     }
 
                     console.log(`[StreamFrame] Native direct fetch: ${cleanUrl}`);
@@ -245,12 +246,24 @@ export default defineComponent({
 
                 // Subtitles options mapping
                 const captionOptions = resolveData.captions || [];
-                subtitles.value = captionOptions.map((sub: any, idx: number) => ({
-                    label: sub.language,
-                    src: sub.url,
-                    srclang: sub.languageCode || 'en',
-                    default: idx === 0 || sub.language.toLowerCase() === 'english'
-                }));
+                subtitles.value = captionOptions.map((sub: any, idx: number) => {
+                    let subUrl = sub.url;
+                    if (subUrl.startsWith('/api/cinestream') && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+                        if (subUrl.includes('proxyUrl=')) {
+                            const proxyUrlParam = subUrl.split('proxyUrl=')[1];
+                            subUrl = `http://localhost:3000/api/cinestream/proxy?url=${proxyUrlParam}`;
+                        } else if (subUrl.includes('subUrl=')) {
+                            const subParam = subUrl.split('subUrl=')[1];
+                            subUrl = `http://localhost:3000/api/cinestream/proxy?url=${subParam}`;
+                        }
+                    }
+                    return {
+                        label: sub.language,
+                        src: subUrl,
+                        srclang: sub.languageCode || 'en',
+                        default: idx === 0 || sub.language.toLowerCase() === 'english'
+                    };
+                });
 
             } catch (err: any) {
                 resolveError.value = err.message || 'Failed to strike print';
@@ -283,9 +296,11 @@ export default defineComponent({
 
             const activeSub = subtitleList.find((s) => s.default);
 
+            const isM3U8 = videoUrl.value.toLowerCase().includes('m3u8') || videoUrl.value.toLowerCase().includes('hls') || videoUrl.value.toLowerCase().includes('type=hls');
             artplayerInstance = new Artplayer({
                 container: artPlayerRef.value as HTMLDivElement,
                 url: videoUrl.value,
+                type: isM3U8 ? 'm3u8' : 'mp4',
                 autoplay: true,
                 autoSize: true,
                 playbackRate: true,
@@ -298,6 +313,22 @@ export default defineComponent({
                 miniProgressBar: true,
                 theme: '#E50914', // Premium Netflix Red theme
                 quality: qualityList,
+                customType: {
+                    m3u8: function (video, url, art: any) {
+                        if (Hls.isSupported()) {
+                            if (art.hls) art.hls.destroy();
+                            const hls = new Hls();
+                            hls.loadSource(url);
+                            hls.attachMedia(video);
+                            art.hls = hls;
+                            art.on('destroy', () => hls.destroy());
+                        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                            video.src = url;
+                        } else {
+                            art.notice.show = 'Unsupported media type';
+                        }
+                    }
+                },
                 subtitle: activeSub ? {
                     url: activeSub.url,
                     type: 'vtt',
@@ -350,7 +381,8 @@ export default defineComponent({
                 if (!artplayerInstance) {
                     initArtPlayer();
                 } else if (artplayerInstance.url !== next) {
-                    (artplayerInstance as any).switch(next);
+                    const isM3U8 = next.toLowerCase().includes('m3u8') || next.toLowerCase().includes('hls') || next.toLowerCase().includes('type=hls');
+                    (artplayerInstance as any).switch(next, isM3U8 ? 'm3u8' : 'mp4');
                 }
             }
         });

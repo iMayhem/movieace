@@ -145,8 +145,9 @@ async function scrapeVideasyForServer(server, type, tmdbId, title, year, season,
 
       if (Array.isArray(result.sources)) {
         result.sources.forEach(src => {
+          const proxiedUrl = `http://localhost:3000/api/cinestream/proxy?url=${encodeURIComponent(src.url)}`;
           options.push({
-            url: src.url,
+            url: proxiedUrl,
             quality: src.quality || 'Auto',
             format: src.url.includes('.m3u8') ? 'm3u8' : 'mp4',
             server: `Videasy [${server.toUpperCase()}]`,
@@ -158,7 +159,7 @@ async function scrapeVideasyForServer(server, type, tmdbId, title, year, season,
       if (Array.isArray(result.subtitles)) {
         result.subtitles.forEach(sub => {
           captions.push({
-            url: sub.url,
+            url: `http://localhost:3000/api/cinestream/proxy?url=${encodeURIComponent(sub.url)}`,
             language: sub.language || 'English',
             languageCode: sub.languageCode || 'en'
           });
@@ -241,6 +242,71 @@ app.get('/api/cinestream/resolve', async (req, res) => {
     options: options,
     captions: captions
   });
+});
+
+app.get('/api/cinestream/subtitle', async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).send('Missing url parameter');
+  try {
+    const subRes = await axios.get(url, {
+      headers: { 'User-Agent': USER_AGENT },
+      timeout: 6000
+    });
+    res.setHeader('Content-Type', 'text/vtt');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.send(subRes.data);
+  } catch (err) {
+    console.error(`[Subtitle Proxy Error] ${err.message}`);
+    res.status(500).send('Failed to fetch subtitle');
+  }
+});
+
+app.get('/api/cinestream/proxy', async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).send('Missing url parameter');
+  try {
+    const headers = {
+      'User-Agent': USER_AGENT,
+      'Origin': 'https://www.cineby.sc',
+      'Referer': 'https://www.cineby.sc/'
+    };
+    const proxyRes = await axios.get(url, {
+      headers,
+      responseType: 'arraybuffer',
+      timeout: 15000
+    });
+
+    res.setHeader('Access-Control-Allow-Origin', '*');
+
+    if (url.includes('.m3u8')) {
+      const text = proxyRes.data.toString('utf-8');
+      const lines = text.split('\n');
+      const rewritten = lines.map(line => {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#')) {
+          try {
+            const absoluteUrl = new URL(trimmed, url).href;
+            if (absoluteUrl.includes('.m3u8') || absoluteUrl.includes('type=hls') || absoluteUrl.includes('.vtt')) {
+                return `http://localhost:3000/api/cinestream/proxy?url=${encodeURIComponent(absoluteUrl)}`;
+            } else {
+                return absoluteUrl; // Direct to CDN! Zero VPS Bandwidth Tunneling!
+            }
+          } catch(e) {
+            return line;
+          }
+        }
+        return line;
+      }).join('\n');
+      res.setHeader('Content-Type', 'application/x-mpegURL');
+      res.send(rewritten);
+    } else {
+      res.setHeader('Content-Type', proxyRes.headers['content-type']);
+      res.send(proxyRes.data);
+    }
+  } catch (err) {
+    console.error(`[Proxy Error] ${err.message}`);
+    res.status(500).send('Proxy error');
+  }
 });
 
 app.listen(PORT, () => {
