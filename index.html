@@ -4,7 +4,104 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title>🎬 Moovie</title>
+    
+    <!-- Early Anti-Inspect Protection (runs before any other scripts) -->
+    <script>
+      (function() {
+        'use strict';
+        
+        // Disable right-click immediately
+        document.addEventListener('contextmenu', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }, true);
+        
+        // Disable key shortcuts immediately
+        document.addEventListener('keydown', function(e) {
+          // F12
+          if (e.key === 'F12') {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+          }
+          
+          var meta = e.ctrlKey || e.metaKey;
+          if (!meta) return;
+          
+          var k = (e.key || '').toUpperCase();
+          
+          // Block DevTools shortcuts
+          if (e.shiftKey && (k === 'I' || k === 'J' || k === 'C' || k === 'K' || k === 'M' || k === 'E')) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+          }
+          
+          // Block view source, save, print
+          if (k === 'U' || k === 'S' || k === 'P') {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+          }
+          
+          // Block Alt combinations
+          if (e.altKey && (k === 'I' || k === 'J' || k === 'C')) {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+          }
+        }, true);
+        
+        // Disable text selection
+        document.addEventListener('selectstart', function(e) {
+          if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            return false;
+          }
+        }, true);
+        
+        // Disable copy/cut/paste
+        document.addEventListener('copy', function(e) {
+          e.preventDefault();
+          return false;
+        }, true);
+        
+        document.addEventListener('cut', function(e) {
+          e.preventDefault();
+          return false;
+        }, true);
+        
+        // Disable drag
+        document.addEventListener('dragstart', function(e) {
+          e.preventDefault();
+          return false;
+        }, true);
+        
+        // Detect DevTools via debugger trap
+        setInterval(function() {
+          var before = new Date().getTime();
+          // eslint-disable-next-line no-debugger
+          debugger;
+          var after = new Date().getTime();
+          if (after - before > 100) {
+            // DevTools detected - redirect or show warning
+            document.body.innerHTML = '<div style="position:fixed;inset:0;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;font-family:sans-serif;text-align:center;padding:20px;"><div><h1>⚠️ Developer Tools Detected</h1><p>Please close developer tools and refresh the page.</p></div></div>';
+          }
+        }, 1000);
+        
+        // Clear console periodically
+        setInterval(function() {
+          try {
+            console.clear();
+          } catch(e) {}
+        }, 1000);
+        
+      })();
+    </script>
+    
     <script>
       (function () {
         try {

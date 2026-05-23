@@ -23,7 +23,10 @@ let intervalId: number | null = null;
 let listeners: Array<{ target: EventTarget; type: string; handler: any; opts?: any }> = [];
 
 const shouldGuard = () => {
-    return false;
+    // Always guard in production
+    if (import.meta.env.PROD) return true;
+    // In dev, check if VITE_ANTI_INSPECT is explicitly enabled
+    return import.meta.env.VITE_ANTI_INSPECT === '1';
 };
 
 const swallow = (e: Event) => {
@@ -33,13 +36,47 @@ const swallow = (e: Event) => {
 };
 
 const isBlockedKey = (e: KeyboardEvent): boolean => {
+    // F12 - DevTools
     if (e.key === 'F12') return true;
+    
+    // F1-F11 (optional - can be too aggressive)
+    // if (e.key.startsWith('F') && e.key.length <= 3) return true;
+    
     const meta = e.ctrlKey || e.metaKey;
     if (!meta) return false;
+    
     const k = (e.key || '').toUpperCase();
+    
+    // Ctrl/Cmd + Shift + I/J/C (DevTools)
     if (e.shiftKey && (k === 'I' || k === 'J' || k === 'C')) return true;
+    
+    // Ctrl/Cmd + U (View Source)
     if (k === 'U') return true;
+    
+    // Ctrl/Cmd + S (Save Page)
     if (k === 'S') return true;
+    
+    // Ctrl/Cmd + P (Print - can reveal source)
+    if (k === 'P') return true;
+    
+    // Ctrl/Cmd + Shift + K (Firefox Console)
+    if (e.shiftKey && k === 'K') return true;
+    
+    // Ctrl/Cmd + Shift + M (Responsive Design Mode)
+    if (e.shiftKey && k === 'M') return true;
+    
+    // Ctrl/Cmd + Shift + E (Network Panel in Firefox)
+    if (e.shiftKey && k === 'E') return true;
+    
+    // Ctrl/Cmd + Option/Alt + I (Safari DevTools)
+    if (e.altKey && k === 'I') return true;
+    
+    // Ctrl/Cmd + Option/Alt + J (Chrome DevTools)
+    if (e.altKey && k === 'J') return true;
+    
+    // Ctrl/Cmd + Option/Alt + C (Inspect Element)
+    if (e.altKey && k === 'C') return true;
+    
     return false;
 };
 
@@ -91,9 +128,47 @@ const isTouchDevice = () => {
 let wasOpen = false;
 const detectDevTools = () => {
     if (isTouchDevice()) return;
+    
+    // Method 1: Window size delta detection
     const widthDelta = window.outerWidth - window.innerWidth;
     const heightDelta = window.outerHeight - window.innerHeight;
-    const open = widthDelta > THRESHOLD || heightDelta > THRESHOLD;
+    const sizeOpen = widthDelta > THRESHOLD || heightDelta > THRESHOLD;
+    
+    // Method 2: Console.log timing detection
+    let timingOpen = false;
+    const start = performance.now();
+    // eslint-disable-next-line no-console
+    console.profile?.('check');
+    // eslint-disable-next-line no-console
+    console.profileEnd?.('check');
+    const elapsed = performance.now() - start;
+    if (elapsed > 100) timingOpen = true;
+    
+    // Method 3: toString override detection
+    let toStringOpen = false;
+    const element = new Image();
+    Object.defineProperty(element, 'id', {
+        get: function() {
+            toStringOpen = true;
+            return 'detect';
+        }
+    });
+    // eslint-disable-next-line no-console
+    console.dir?.(element);
+    
+    // Method 4: Firebug detection (legacy but still useful)
+    const firebugOpen = !!(window as any).console?.firebug;
+    
+    // Method 5: Chrome DevTools detection via console.table
+    let tableOpen = false;
+    const before = new Date().getTime();
+    // eslint-disable-next-line no-console
+    console.table?.([]);
+    const after = new Date().getTime();
+    if (after - before > 10) tableOpen = true;
+    
+    const open = sizeOpen || timingOpen || toStringOpen || firebugOpen || tableOpen;
+    
     if (open && !wasOpen) {
         wasOpen = true;
         lockScreen();
@@ -132,20 +207,110 @@ export function installAntiInspect() {
     if (!shouldGuard()) return;
     installed = true;
 
+    // Block right-click context menu
     addListener(document, 'contextmenu', swallow);
+    
+    // Block keyboard shortcuts
     addListener(document, 'keydown', onKeyDown, { capture: true });
+    addListener(document, 'keyup', onKeyDown, { capture: true });
+    
+    // Block text selection and copying
     addListener(document, 'selectstart', swallow);
     addListener(document, 'copy', swallow);
     addListener(document, 'cut', swallow);
+    addListener(document, 'paste', swallow);
     addListener(document, 'dragstart', swallow);
+    
+    // Block mouse events that could be used for inspection
+    addListener(document, 'mousedown', (e: MouseEvent) => {
+        // Block middle mouse button (often used to open in new tab)
+        if (e.button === 1) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    });
+    
+    // Disable text selection via CSS (backup)
+    const style = document.createElement('style');
+    style.id = 'anti-inspect-styles';
+    style.textContent = `
+        * {
+            -webkit-user-select: none !important;
+            -moz-user-select: none !important;
+            -ms-user-select: none !important;
+            user-select: none !important;
+        }
+        input, textarea {
+            -webkit-user-select: text !important;
+            -moz-user-select: text !important;
+            -ms-user-select: text !important;
+            user-select: text !important;
+        }
+    `;
+    document.head.appendChild(style);
 
+    // Mute console
     muteConsole();
+    
+    // Prevent iframe inspection
+    try {
+        Object.defineProperty(window, 'frameElement', {
+            get: () => null,
+            configurable: false
+        });
+    } catch { /* ignore */ }
+    
+    // Detect DevTools via toString override
+    const detectToString = () => {
+        const element = document.createElement('div');
+        Object.defineProperty(element, 'id', {
+            get: function() {
+                lockScreen();
+                return 'devtools-detected';
+            }
+        });
+        // eslint-disable-next-line no-console
+        console.log('%c', element);
+    };
+    
+    // Prevent source viewing via data URIs
+    addListener(window, 'beforeunload', (e: BeforeUnloadEvent) => {
+        if (document.activeElement?.tagName === 'IFRAME') {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
 
+    // Main detection interval
     intervalId = window.setInterval(() => {
         try { console.clear(); } catch { /* ignore */ }
         detectDevTools();
         debuggerTrap();
+        detectToString();
     }, TICK_MS);
+    
+    // Additional rapid detection for faster response
+    const rapidInterval = window.setInterval(() => {
+        debuggerTrap();
+    }, 100);
+    
+    // Store rapid interval for cleanup
+    (window as any).__rapidAntiInspectInterval = rapidInterval;
+    
+    // Detect DevTools via performance timing
+    const checkPerformance = () => {
+        const start = performance.now();
+        // eslint-disable-next-line no-debugger
+        debugger;
+        const end = performance.now();
+        if (end - start > 100) {
+            lockScreen();
+        }
+    };
+    
+    // Run performance check periodically
+    const perfInterval = window.setInterval(checkPerformance, 2000);
+    (window as any).__perfAntiInspectInterval = perfInterval;
 }
 
 export function uninstallAntiInspect() {
@@ -156,9 +321,26 @@ export function uninstallAntiInspect() {
         window.clearInterval(intervalId);
         intervalId = null;
     }
+    
+    // Clear rapid interval
+    if ((window as any).__rapidAntiInspectInterval) {
+        window.clearInterval((window as any).__rapidAntiInspectInterval);
+        delete (window as any).__rapidAntiInspectInterval;
+    }
+    
+    // Clear performance interval
+    if ((window as any).__perfAntiInspectInterval) {
+        window.clearInterval((window as any).__perfAntiInspectInterval);
+        delete (window as any).__perfAntiInspectInterval;
+    }
+    
     listeners.forEach(({ target, type, handler, opts }) => {
         target.removeEventListener(type, handler, opts);
     });
     listeners = [];
+    
+    // Remove injected styles
+    document.getElementById('anti-inspect-styles')?.remove();
+    
     unlockScreen();
 }
