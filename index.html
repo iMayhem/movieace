@@ -3,8 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>🎬 Moovie</title>
+    <script>
+      (function () {
+        try {
+          var path = location.pathname;
+          if (path.indexOf('/api/') === 0 || path.indexOf('/party') === 0 || /\.[a-z0-9]+$/i.test(path)) return;
+          if (path === '/m' || path.indexOf('/m/') === 0) return;
+          var q = location.search || '';
+          if (/\bdesktop=1\b/.test(q) || q.indexOf('desktop') !== -1) return;
+          var mobileQ = /\bmobile=1\b/.test(q) || q.indexOf('mobile') !== -1;
+          var ua = navigator.userAgent || '';
+          var mobileUa = /Android|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua) || /iPad|Tablet/i.test(ua);
+          var touch = 'ontouchstart' in window || (navigator.maxTouchPoints || 0) > 0;
+          var narrow = window.matchMedia && window.matchMedia('(max-width: 1024px)').matches;
+          var tablet = touch && narrow;
+          if (mobileQ || mobileUa || tablet) {
+            var target = path === '/' ? '/m' : '/m' + path;
+            location.replace(target + location.search + location.hash);
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>

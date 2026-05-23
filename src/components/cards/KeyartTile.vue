@@ -39,6 +39,7 @@
 <script lang="ts">
 import { computed, defineComponent, PropType } from 'vue';
 import { useWebImage } from '../../utils/useWebImage';
+import { useAppPaths } from '../../composables/useAppPaths';
 
 type MediaType = 'movie' | 'tv';
 
@@ -60,6 +61,8 @@ export default defineComponent({
         }
     },
     setup(props) {
+        const { detailPath } = useAppPaths();
+
         const imageUrl = computed(() => {
             const path = props.backdropPath || props.posterPath;
             if (!path) return '';
@@ -73,7 +76,7 @@ export default defineComponent({
         );
 
         const routeTo = computed(() =>
-            props.type === 'tv' ? `/tv-show/${props.id}` : `/movie/${props.id}`
+            detailPath(props.type === 'tv' ? 'tv' : 'movie', props.id)
         );
 
         return { imageUrl, initial, year, routeTo };

@@ -75,6 +75,7 @@
 <script lang="ts">
 import { computed, defineComponent, PropType } from 'vue';
 import LmButton from '../primitives/Button.vue';
+import { useAppPaths } from '../../composables/useAppPaths';
 
 export default defineComponent({
     name: 'SpotlightModule',
@@ -123,14 +124,16 @@ export default defineComponent({
             return `${props.overview.slice(0, 277).trim()}…`;
         });
 
+        const paths = useAppPaths();
+
         const playRoute = computed(() =>
             props.type === 'tv'
-                ? `/stream/tv-show/${props.id}/season/1/episode/1`
-                : `/stream/movie/${props.id}`
+                ? paths.streamTvShow(props.id, 1, 1)
+                : paths.streamMovie(props.id)
         );
 
         const detailRoute = computed(() =>
-            props.type === 'tv' ? `/tv-show/${props.id}` : `/movie/${props.id}`
+            paths.detailPath(props.type === 'tv' ? 'tv' : 'movie', props.id)
         );
 
         return {

@@ -109,6 +109,7 @@ import { genreName, primeGenres } from '../../composables/useGenreLookup';
 import { isInWatchlist, toggleWatchlistItem } from '../../composables/useWatchlist';
 import { useAmbientColor } from '../../composables/useAmbientColor';
 import { useTrailerEmbed } from '../../composables/useTrailerEmbed';
+import { useAppPaths } from '../../composables/useAppPaths';
 
 export default defineComponent({
     name: 'BillboardHero',
@@ -163,14 +164,16 @@ export default defineComponent({
             return `${props.overview.slice(0, 237).trim()}…`;
         });
 
+        const paths = useAppPaths();
+
         const playRoute = computed(() =>
             props.type === 'tv'
-                ? `/stream/tv-show/${props.id}/season/1/episode/1`
-                : `/stream/movie/${props.id}`
+                ? paths.streamTvShow(props.id, 1, 1)
+                : paths.streamMovie(props.id)
         );
 
         const detailRoute = computed(() =>
-            props.type === 'tv' ? `/tv-show/${props.id}` : `/movie/${props.id}`
+            paths.detailPath(props.type === 'tv' ? 'tv' : 'movie', props.id)
         );
 
         const inWatchlist = computed(() => isInWatchlist(props.id, props.type));

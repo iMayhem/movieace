@@ -27,6 +27,7 @@
 <script lang="ts">
 import { computed, defineComponent, PropType } from 'vue';
 import { useWebImage } from '../../utils/useWebImage';
+import { useAppPaths } from '../../composables/useAppPaths';
 
 export default defineComponent({
     name: 'PersonCard',
@@ -38,6 +39,8 @@ export default defineComponent({
         department: { type: String, default: '' }
     },
     setup(props) {
+        const { actor } = useAppPaths();
+
         const imageUrl = computed(() => {
             if (!props.profilePath) return '';
             return useWebImage(props.profilePath, 'small');
@@ -53,7 +56,7 @@ export default defineComponent({
                 .join('');
         });
 
-        const routeTo = computed(() => `/actor/${props.id}`);
+        const routeTo = computed(() => actor(props.id));
 
         return { imageUrl, initials, routeTo };
     }

@@ -82,6 +82,7 @@ import { useWebImage } from '../../utils/useWebImage';
 import { genreName } from '../../composables/useGenreLookup';
 import { isInWatchlist, toggleWatchlistItem } from '../../composables/useWatchlist';
 import { useRouter } from 'vue-router';
+import { useAppPaths } from '../../composables/useAppPaths';
 
 type MediaType = 'movie' | 'tv' | 'anime';
 
@@ -104,6 +105,7 @@ export default defineComponent({
     },
     setup(props) {
         const router = useRouter();
+        const { detailPath } = useAppPaths();
         const peeking = ref(false);
         let enterTimer: number | null = null;
         let leaveTimer: number | null = null;
@@ -131,8 +133,8 @@ export default defineComponent({
         });
 
         const routeTo = computed(() => {
-            if (props.type === 'anime') return `/anime/${props.id}`;
-            return props.type === 'tv' ? `/tv-show/${props.id}` : `/movie/${props.id}`;
+            const kind = props.type === 'anime' ? 'anime' : props.type === 'tv' ? 'tv' : 'movie';
+            return detailPath(kind as 'movie' | 'tv' | 'anime', props.id);
         });
 
         const inWatchlist = computed(() =>

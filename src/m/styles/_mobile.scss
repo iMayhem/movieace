@@ -1,0 +1,61 @@
+// Global touch / mobile polish when using the /m experience
+html:has(.m-app) {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.m-app {
+    a,
+    button {
+        touch-action: manipulation;
+    }
+
+    // Poster rails: horizontal scroll with snap on small screens
+    .continue-shelf,
+    .curated-rail__track,
+    .top-ten-rail__track {
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .poster-card,
+    .keyart-tile {
+        scroll-snap-align: start;
+    }
+}
+
+// Stream pages under /m — extra guardrails (layout also fixed in StreamMovie/TVShow)
+.m-watch {
+    min-height: 100dvh;
+    background: var(--ink-900);
+
+    .watch-stage__chrome {
+        border-bottom: 1px solid var(--rule);
+        background: rgba(11, 10, 8, 0.96);
+    }
+
+    .watch-stage__main {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .server-accordion__head {
+        min-height: 3.25rem;
+    }
+
+    .server-accordion__body:not([hidden]) {
+        max-height: min(50vh, 420px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+@media (max-width: 1024px) {
+    .discover__body {
+        grid-template-columns: 1fr !important;
+    }
+
+    .site-header__nav {
+        display: none;
+    }
+}

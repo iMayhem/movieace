@@ -250,6 +250,7 @@ import { Server } from '../composables/useStream';
 import StreamFrame from '../components/player/StreamFrame.vue';
 import ServerAccordion from '../components/player/ServerAccordion.vue';
 import ArrowLeft from '../components/svg/outline/arrow-left-long.vue';
+import { useAppPaths } from '../composables/useAppPaths';
 
 export default defineComponent({
     name: 'StreamAnime',
@@ -261,6 +262,7 @@ export default defineComponent({
     setup() {
         const route = useRoute();
         const router = useRouter();
+        const paths = useAppPaths();
         const { fetchAnimeById } = useAniList();
 
         const animeId = ref<number>(Number(route.params.id));
@@ -431,7 +433,7 @@ export default defineComponent({
 
         const goToSeason = (id: number) => {
             if (id !== animeId.value) {
-                router.push(`/stream/anime/${id}/episode/1`);
+                router.push(paths.streamAnime(id, 1));
             }
         };
 
@@ -463,13 +465,13 @@ export default defineComponent({
         };
 
         const goBack = () => {
-            router.push(`/anime/${animeId.value}`);
+            router.push(paths.anime(animeId.value));
         };
 
         const goToEpisode = (ep: number) => {
             if (ep >= 1 && ep <= totalEpisodes.value) {
                 currentEpisode.value = ep;
-                router.push(`/stream/anime/${animeId.value}/episode/${ep}`);
+                router.push(paths.streamAnime(animeId.value, ep));
             }
         };
 

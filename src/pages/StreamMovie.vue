@@ -116,6 +116,7 @@ import {
 } from '../composables/useStream';
 import { getResumeTimestamp } from '../composables/useProgress';
 import { useWebImage } from '../utils/useWebImage';
+import { useAppPaths } from '../composables/useAppPaths';
 
 import StreamFrame from '../components/player/StreamFrame.vue';
 import ServerAccordion from '../components/player/ServerAccordion.vue';
@@ -127,6 +128,7 @@ export default defineComponent({
     setup() {
         const route = useRoute();
         const router = useRouter();
+        const paths = useAppPaths();
         const miniPlayer = useMiniPlayer();
 
         const movieId = ref<string>(route.params.id as string);
@@ -225,7 +227,7 @@ export default defineComponent({
             registerMiniPlayer();
         };
 
-        const goBack = () => router.push(`/movie/${movieId.value}`);
+        const goBack = () => router.push(paths.movie(movieId.value));
 
         watch(
             () => route.params.id,
@@ -268,6 +270,13 @@ export default defineComponent({
     scroll-behavior: smooth;
     background: var(--ink-900);
     color: var(--bone-50);
+
+    @media (max-width: 1023px) {
+        height: auto;
+        min-height: 100dvh;
+        scroll-snap-type: none;
+        overflow-x: hidden;
+    }
 
     // Hide scrollbar visually but keep it functional
     scrollbar-width: none;
@@ -415,28 +424,50 @@ export default defineComponent({
         margin: 0 auto;
         box-sizing: border-box;
 
-        // Snap slide 1: take full viewport height, push content below sticky header
-        scroll-snap-align: start;
-        scroll-snap-stop: always;
-        height: 100dvh;
-        padding-top: 72px; // clear the sticky chrome bar
+        @media (max-width: 1023px) {
+            display: flex;
+            flex-direction: column;
+            gap: var(--s-4);
+            padding: var(--s-3);
+            height: auto;
+            min-height: 0;
+        }
 
+        // Snap slide 1 (desktop): full viewport with sticky chrome overlay
         @media (min-width: 1024px) {
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            height: 100dvh;
+            padding: 72px var(--s-5) var(--s-4) var(--s-5);
             grid-template-columns: 1fr 380px;
             align-items: stretch;
-            padding: 72px var(--s-5) var(--s-4) var(--s-5);
         }
     }
 
     &__player-container {
         min-width: 0;
+        flex-shrink: 0;
+
+        @media (max-width: 1023px) {
+            width: 100%;
+
+            :deep(.stream-frame__stage) {
+                padding: 0;
+            }
+
+            :deep(.stream-frame__player) {
+                border-radius: var(--r-md);
+            }
+        }
     }
 
     &__aside {
         min-width: 0;
+        flex-shrink: 0;
 
         @media (max-width: 1023px) {
-            padding: 0 var(--s-4);
+            padding: 0;
+            width: 100%;
         }
 
         @media (min-width: 1024px) {
@@ -503,21 +534,37 @@ export default defineComponent({
     }
 
     &__feature {
-        // Snap slide 2: full viewport, content centered
-        scroll-snap-align: start;
-        scroll-snap-stop: always;
-        height: 100dvh;
         display: grid;
-        align-content: center;
-        padding: 0 var(--s-4);
         gap: var(--s-6);
         max-width: 1280px;
         margin: 0 auto;
         width: 100%;
         box-sizing: border-box;
+        padding: var(--s-6) var(--s-4);
 
-        @media (min-width: 768px) {
+        @media (max-width: 1023px) {
+            height: auto;
+            min-height: 0;
+            scroll-snap-align: none;
+            align-content: start;
+            padding: var(--s-5) var(--s-3) var(--s-4);
+        }
+
+        // Snap slide 2 (desktop): full viewport, content centered
+        @media (min-width: 1024px) {
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            height: 100dvh;
+            align-content: center;
             padding: 0 var(--s-5);
+        }
+
+        @media (min-width: 768px) and (max-width: 1023px) {
+            grid-template-columns: 200px 1fr;
+            align-items: start;
+        }
+
+        @media (min-width: 1024px) {
             grid-template-columns: 280px 1fr;
             align-items: center;
         }
@@ -633,6 +680,10 @@ export default defineComponent({
         padding: 0 var(--s-4);
         text-align: center;
         color: var(--bone-500);
+
+        @media (max-width: 1023px) {
+            padding: 0 var(--s-3) calc(var(--s-8) + env(safe-area-inset-bottom, 0px));
+        }
 
         @media (min-width: 768px) {
             padding: 0 var(--s-5);

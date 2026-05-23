@@ -1,4 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
+import { mobileRoutes } from '../m/routes'
+import { shouldUseMobileSite } from '../utils/device'
+import { isBypassPath, isMobileAppPath } from '../utils/mobileRedirect'
 declare module 'vue-router' {
     interface RouteMeta {
         showInHeader?: boolean,
@@ -24,15 +27,6 @@ const routes: Array<RouteRecordRaw> = [
         meta: {
             showInHeader: true,
             title: 'Movies'
-        }
-    },
-    {
-        path: '/:pathMatch(.*)*',
-        name: 'NotFound',
-        component: () => import('../pages/NotFound.vue'),
-        meta: {
-            showInHeader: false,
-            title: 'Not Found'
         }
     },
     {
@@ -158,6 +152,16 @@ const routes: Array<RouteRecordRaw> = [
             title: 'Stream Anime Episode'
         }
     },
+    ...mobileRoutes,
+    {
+        path: '/:pathMatch(.*)*',
+        name: 'NotFound',
+        component: () => import('../pages/NotFound.vue'),
+        meta: {
+            showInHeader: false,
+            title: 'Not Found'
+        }
+    }
 ];
 
 const router = createRouter({
@@ -167,6 +171,41 @@ const router = createRouter({
         if (savedPosition) return savedPosition;
         return { top: 0, left: 0 };
     }
+});
+
+router.beforeEach((to, _from, next) => {
+    if (isBypassPath(to.path)) {
+        next();
+        return;
+    }
+
+    const useMobile = shouldUseMobileSite(
+        typeof window !== 'undefined' ? window.location.search : ''
+    );
+    const onMobile = isMobileAppPath(to.path);
+
+    if (useMobile && !onMobile) {
+        next({
+            path: to.path === '/' ? '/m' : `/m${to.path}`,
+            query: to.query,
+            hash: to.hash,
+            replace: true
+        });
+        return;
+    }
+
+    if (!useMobile && onMobile) {
+        const desktopPath = to.path === '/m' ? '/' : to.path.replace(/^\/m/, '') || '/';
+        next({
+            path: desktopPath,
+            query: to.query,
+            hash: to.hash,
+            replace: true
+        });
+        return;
+    }
+
+    next();
 });
 
 export { router, routes }

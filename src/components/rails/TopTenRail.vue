@@ -38,6 +38,7 @@
 import { computed, defineComponent, PropType } from 'vue';
 import LmRail from './Rail.vue';
 import { useWebImage } from '../../utils/useWebImage';
+import { useAppPaths } from '../../composables/useAppPaths';
 
 export interface TopItem {
     id: number | string;
@@ -57,13 +58,14 @@ export default defineComponent({
         moreTo: { type: [String, Object], default: null }
     },
     setup(props) {
+        const { detailPath } = useAppPaths();
         const displayItems = computed(() => props.items.slice(0, 10));
 
         const posterFor = (item: TopItem) =>
             item.posterPath ? useWebImage(item.posterPath, 'medium') : '';
 
         const routeFor = (item: TopItem) =>
-            item.type === 'tv' ? `/tv-show/${item.id}` : `/movie/${item.id}`;
+            detailPath(item.type === 'tv' ? 'tv' : 'movie', item.id);
 
         return { displayItems, posterFor, routeFor };
     }

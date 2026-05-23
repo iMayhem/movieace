@@ -33,7 +33,7 @@
         />
 
         <div class="container-lm masthead__inner">
-            <router-link to="/" class="masthead__crumb eyebrow">
+            <router-link :to="homePath" class="masthead__crumb eyebrow">
                 <span aria-hidden="true">←</span>
                 Back to issue
             </router-link>
@@ -140,6 +140,7 @@ import { isInWatchlist, toggleWatchlistItem } from '../../composables/useWatchli
 import { useAmbientColor } from '../../composables/useAmbientColor';
 import { useTrailerEmbed } from '../../composables/useTrailerEmbed';
 import { usePrefetch } from '../../composables/usePrefetch';
+import { useAppPaths } from '../../composables/useAppPaths';
 
 export default defineComponent({
     name: 'TitleMasthead',
@@ -163,6 +164,8 @@ export default defineComponent({
         showTrailer: { type: Boolean, default: true }
     },
     setup(props) {
+        const { home } = useAppPaths();
+        const homePath = home;
         const IMAGE_BASEURL = (import.meta as any).env.VITE_IMAGE_BASE_URL || 'https://image.tmdb.org/t/p/';
 
         const rootRef = ref<HTMLElement | null>(null);
@@ -243,6 +246,7 @@ export default defineComponent({
         });
 
         return {
+            homePath,
             rootRef,
             backdropUrl,
             year,
