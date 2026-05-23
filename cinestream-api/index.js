@@ -294,27 +294,7 @@ app.get('/api/cinestream/resolve', async (req, res) => {
       console.log(`[CineStream] Background fetch completed with ${successCount} Videasy servers`);
     })();
 
-      // Priority 1: Race Videasy servers, return first 3 successful responses
-      const videasyPromises = VIDEASY_SERVERS.map(server =>
-        scrapeVideasyForServer(server, type, id, title, year, season, episode)
-          .then(res => res || null)
-          .catch(() => null)
-      );
 
-      const videasyResults = [];
-      for (const promise of videasyPromises) {
-        try {
-          const result = await Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject('timeout'), 3000))]);
-          if (result) {
-            videasyResults.push(result);
-            if (videasyResults.length >= 3) break;
-          }
-        } catch (e) {
-          // Continue to next server
-        }
-      }
-      console.log(`[CineStream] Background fetch completed with ${videasyResults.length} Videasy servers`);
-    })();
 
     return res.json({
       stream: options[0],
@@ -403,7 +383,11 @@ app.get('/api/cinestream/proxy', async (req, res) => {
         if (trimmed && !trimmed.startsWith('#')) {
           try {
             const absoluteUrl = new URL(trimmed, url).href;
-            return `http://localhost:3000/api/cinestream/proxy?url=${encodeURIComponent(absoluteUrl)}`;
+            if (absoluteUrl.includes('.m3u8')) {
+              return `http://localhost:3000/api/cinestream/proxy?url=${encodeURIComponent(absoluteUrl)}`;
+            } else {
+              return absoluteUrl;
+            }
           } catch(e) {
             return line;
           }

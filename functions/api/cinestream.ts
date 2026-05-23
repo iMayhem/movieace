@@ -268,7 +268,12 @@ export async function onRequest(context) {
           if (trimmed && !trimmed.startsWith('#')) {
             try {
               const absoluteUrl = new URL(trimmed, proxyUrl).href;
-              return `/api/cinestream?proxyUrl=${encodeURIComponent(absoluteUrl)}`;
+              // Only proxy m3u8 playlists. Video segments (.ts, .vtt, etc) should be direct!
+              if (absoluteUrl.includes('.m3u8')) {
+                return `/api/cinestream?proxyUrl=${encodeURIComponent(absoluteUrl)}`;
+              } else {
+                return absoluteUrl;
+              }
             } catch {
               return line;
             }
@@ -357,36 +362,49 @@ export async function onRequest(context) {
     'access-control-allow-origin': '*',
   };
 
-  const quickSettled = await Promise.allSettled([
-    scrapePlaysrc(type, id, season, episode),
-    scrapeVidflix(type, id, season, episode),
-  ]);
+  const playsrcPromise = scrapePlaysrc(type, id, season, episode);
+  const vidflixPromise = scrapeVidflix(type, id, season, episode);
+  const videasyPromise = collectVideasyResults(type, id, title, year, season, episode);
 
-  const quickMerged = mergeProviderResults(quickSettled);
+  const getFirstValid = () => new Promise((resolve) => {
+    let completed = 0;
+    const check = (res) => {
+      completed++;
+      if (res && res.options && res.options.length > 0) {
+        resolve(res);
+      } else if (completed === 3) {
+        resolve(null);
+      }
+    };
+    playsrcPromise.then(check).catch(() => check(null));
+    vidflixPromise.then(check).catch(() => check(null));
+    videasyPromise.then(check).catch(() => check(null));
+  });
 
-  if (quickMerged.options.length > 0) {
-    const { options, captions } = buildResponse(quickMerged.options, quickMerged.captions);
+  // Limit execution time to prevent Cloudflare Worker timeout limits
+  const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 8500));
+  
+  const fastResult = await Promise.race([getFirstValid(), timeoutPromise]);
 
-    context.waitUntil(collectVideasyResults(type, id, title, year, season, episode));
+  const allOptions = [];
+  const allCaptions = [];
 
-    return new Response(
-      JSON.stringify({
-        stream: options[0],
-        options,
-        captions,
-      }),
-      {
-        headers: {
-          ...jsonHeaders,
-          'cache-control': 'public, max-age=1800',
-        },
-      },
-    );
+  if (fastResult && fastResult.options && fastResult.options.length > 0) {
+    allOptions.push(...fastResult.options);
+    allCaptions.push(...fastResult.captions);
+    
+    // Let other scrapers finish in background for caching
+    context.waitUntil(Promise.allSettled([playsrcPromise, vidflixPromise, videasyPromise]));
+  } else {
+    // If no fast result within timeout, or all failed, gather whatever is finished
+    const settled = await Promise.allSettled([playsrcPromise, vidflixPromise, videasyPromise]);
+    for (const result of settled) {
+      if (result.status === 'fulfilled' && result.value) {
+        allOptions.push(...(result.value.options || []));
+        allCaptions.push(...(result.value.captions || []));
+      }
+    }
   }
-
-  const videasyMerged = await collectVideasyResults(type, id, title, year, season, episode);
-  const allOptions = [...quickMerged.options, ...videasyMerged.options];
-  const allCaptions = [...quickMerged.captions, ...videasyMerged.captions];
 
   const { options, captions } = buildResponse(allOptions, allCaptions);
 
