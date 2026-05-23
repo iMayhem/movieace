@@ -143,7 +143,7 @@ async function scrapeVideasyForServer(server, type, tmdbId, title, year, season,
       if (Array.isArray(result.sources)) {
         result.sources.forEach(src => {
           options.push({
-            url: src.url,
+            url: `/api/cinestream?proxyUrl=${encodeURIComponent(src.url)}`,
             quality: src.quality || 'Auto',
             format: src.url.includes('.m3u8') ? 'm3u8' : 'mp4',
             server: `Videasy [${server.toUpperCase()}]`,
