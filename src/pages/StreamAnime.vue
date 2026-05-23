@@ -44,15 +44,15 @@
         <main class="watch-stage__main" id="main">
             <div class="watch-stage__theater">
                 <div class="watch-stage__player-container">
-                    <div class="player-stage-container">
-                        <iframe
-                            :src="currentEmbedUrl"
-                            class="stream-iframe"
-                            allowfullscreen
-                            allow="autoplay; encrypted-media"
-                            :title="animeTitle || 'Anime Player'"
-                        ></iframe>
-                    </div>
+                    <StreamFrame
+                        :embed-url="currentEmbedUrl"
+                        :title="animeTitle || 'Anime Player'"
+                        :backdrop-path="anime?.bannerImage || anime?.coverImage?.large || ''"
+                        :poster-path="anime?.coverImage?.large || ''"
+                        :media-id="animeId"
+                        media-type="anime"
+                        :episode="currentEpisode"
+                    />
                 </div>
 
                 <div class="watch-stage__aside">
@@ -247,6 +247,7 @@ import { useAniList } from '../composables/useAniList';
 import { saveProgress, getProgressPercent } from '../composables/useProgress';
 import { addViewedItem } from '../composables/useHistory';
 import { Server } from '../composables/useStream';
+import StreamFrame from '../components/player/StreamFrame.vue';
 import ServerAccordion from '../components/player/ServerAccordion.vue';
 import ArrowLeft from '../components/svg/outline/arrow-left-long.vue';
 
@@ -254,7 +255,8 @@ export default defineComponent({
     name: 'StreamAnime',
     components: {
         ArrowLeft,
-        ServerAccordion
+        ServerAccordion,
+        StreamFrame
     },
     setup() {
         const route = useRoute();

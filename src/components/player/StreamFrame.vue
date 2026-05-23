@@ -85,7 +85,7 @@ export default defineComponent({
         backdropPath: { type: String, default: '' },
         posterPath: { type: String, default: '' },
         mediaId: { type: [String, Number], default: '' },
-        mediaType: { type: String as () => 'movie' | 'tv', default: 'movie' },
+        mediaType: { type: String as () => 'movie' | 'tv' | 'anime', default: 'movie' },
         season: { type: Number, default: 0 },
         episode: { type: Number, default: 0 }
     },
@@ -153,7 +153,7 @@ export default defineComponent({
                     props.mediaId,
                     props.mediaType,
                     props.mediaType === 'tv' ? props.season : undefined,
-                    props.mediaType === 'tv' ? props.episode : undefined
+                    props.mediaType === 'tv' || props.mediaType === 'anime' ? props.episode : undefined
                 );
             }
         };
@@ -200,7 +200,7 @@ export default defineComponent({
                 props.mediaId,
                 props.mediaType,
                 props.mediaType === 'tv' ? props.season : undefined,
-                props.mediaType === 'tv' ? props.episode : undefined
+                props.mediaType === 'tv' || props.mediaType === 'anime' ? props.episode : undefined
             );
 
             if (cachedData) {
