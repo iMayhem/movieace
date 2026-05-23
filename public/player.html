@@ -75,6 +75,7 @@
         }
     </style>
     <!-- Artplayer & HlsJS CDNs -->
+    <link rel="stylesheet" href="/artplayer-compact.css">
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
 </head>
@@ -171,6 +172,11 @@
                         }
                     }
                 });
+
+                art.cssVar('--art-control-height', '34px');
+                art.cssVar('--art-control-icon-size', '20px');
+                art.cssVar('--art-bottom-gap', '0px');
+                art.cssVar('--art-progress-height', '3px');
 
             } catch (err) {
                 showError(err.message);

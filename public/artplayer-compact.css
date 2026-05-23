@@ -1,0 +1,54 @@
+/* Shared compact CineStream / Artplayer chrome (main site + Watch Together) */
+.art-video-player {
+    --art-control-height: 34px;
+    --art-control-icon-size: 20px;
+    --art-control-icon-scale: 0.92;
+    --art-bottom-gap: 0px;
+    --art-bottom-offset: 0px;
+    --art-progress-height: 3px;
+    --art-progress-top-gap: 0px;
+    --art-padding: 8px;
+    --art-mini-progress-height: 2px;
+}
+
+.art-video-player .art-bottom {
+    padding-bottom: 0 !important;
+}
+
+.art-video-player .art-controls {
+    height: var(--art-control-height) !important;
+    min-height: var(--art-control-height) !important;
+    padding: 0 10px !important;
+    background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.88) 100%) !important;
+}
+
+.art-video-player .art-control-progress {
+    bottom: var(--art-control-height) !important;
+    height: var(--art-progress-height) !important;
+}
+
+.art-video-player .art-control-progress:hover {
+    height: 5px !important;
+    bottom: calc(var(--art-control-height) - 2px) !important;
+}
+
+.art-video-player .art-controls-left,
+.art-video-player .art-controls-center,
+.art-video-player .art-controls-right {
+    height: 100%;
+    align-items: center;
+}
+
+.art-video-player .art-control-time {
+    font-size: 11px;
+    line-height: 1;
+    padding: 0 4px;
+}
+
+.art-video-player .art-control-volume .art-volume-panel {
+    bottom: calc(var(--art-control-height) + 6px);
+}
+
+.art-video-player .art-subtitle {
+    bottom: calc(var(--art-control-height) + 14px) !important;
+}

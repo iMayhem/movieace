@@ -11,6 +11,10 @@
     
     <!-- Supabase JS Client CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- CineStream native player (Watch Together) -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/artplayer/dist/artplayer.js"></script>
+    <link rel="stylesheet" href="/artplayer-compact.css">
 
     <style>
         :root {
@@ -683,6 +687,77 @@
             height: 100%;
             border: none;
             background: #000;
+        }
+
+        #party-native-stage {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        #party-native-player {
+            width: 100%;
+            height: 100%;
+        }
+
+        .party-native-overlay {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #1a1a24 0%, #000 100%);
+            z-index: 5;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .party-native-overlay.active {
+            display: flex;
+        }
+
+        .party-native-spinner {
+            width: 44px;
+            height: 44px;
+            border: 3px solid rgba(255, 90, 31, 0.15);
+            border-top-color: var(--ember);
+            border-radius: 50%;
+            animation: party-spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes party-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .party-native-overlay h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .party-native-overlay p {
+            color: var(--bone-400);
+            font-size: 0.875rem;
+            max-width: 360px;
+            line-height: 1.5;
+        }
+
+        .party-native-retry {
+            margin-top: 1rem;
+            padding: 0.5rem 1.25rem;
+            border-radius: var(--r-pill);
+            border: 1px solid var(--rule-strong);
+            background: var(--surface-tint);
+            color: var(--bone-50);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .party-native-retry:hover {
+            background: var(--surface-hover);
         }
 
         /* Sidebar & Chat Panel */
@@ -1667,9 +1742,22 @@
                         </button>
                     </div>
 
-                    <!-- Video Iframe -->
+                    <!-- Video: Artplayer (CineStream) or iframe embed -->
                     <div class="player-stage">
-                        <iframe id="video-player-iframe" class="player-iframe" allowfullscreen allow="autoplay"></iframe>
+                        <div id="party-native-stage">
+                            <div id="party-native-loading" class="party-native-overlay active">
+                                <div class="party-native-spinner"></div>
+                                <h3>Striking direct stream</h3>
+                                <p>Contacting CineStream resolvers…</p>
+                            </div>
+                            <div id="party-native-error" class="party-native-overlay">
+                                <h3>Unable to play stream</h3>
+                                <p id="party-native-error-msg">All mirrors returned offline.</p>
+                                <button type="button" class="party-native-retry" onclick="retryPartyCinestream()">Retry</button>
+                            </div>
+                            <div id="party-native-player"></div>
+                        </div>
+                        <iframe id="video-player-iframe" class="player-iframe" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture"></iframe>
                     </div>
 
                     <!-- Autoplay and Navigation Controls -->
@@ -1784,6 +1872,14 @@
         ];
 
         let activeProvider = 'cinestream';
+        let partyArtplayer = null;
+        let partyNativeUrl = '';
+        let partyVideoUrl = '';
+        let partyResolutions = [];
+        let partySubtitles = [];
+        let partyStreamIndex = 0;
+        let partyHasPlayed = false;
+        let partyBufferingTimer = null;
 
         // Session Setup
         let currentUserName = localStorage.getItem('movora_username');
@@ -1841,11 +1937,14 @@
             document.body.classList.remove('room-view-active');
             document.body.classList.remove('lights-out-mode');
 
-            // Stop the video by clearing the iframe src
+            destroyPartyArtplayer();
             const iframe = document.getElementById('video-player-iframe');
             if (iframe) {
                 iframe.src = '';
+                iframe.style.display = 'block';
             }
+            const nativeStage = document.getElementById('party-native-stage');
+            if (nativeStage) nativeStage.style.display = 'none';
 
             // Disconnect from realtime channel
             if (channel) {
@@ -1936,6 +2035,274 @@
             `).join('');
         }
 
+        function isNativeEmbedUrl(url) {
+            return !!url && url.startsWith('NATIVE:');
+        }
+
+        function getCinestreamFetchUrl(nativeUrl) {
+            let cleanUrl = nativeUrl.substring(7);
+            const host = window.location.hostname;
+            if (cleanUrl.startsWith('/api/cinestream') && (host === 'localhost' || host === '127.0.0.1')) {
+                cleanUrl = `http://localhost:3000/api/cinestream/resolve${cleanUrl.substring(15)}`;
+            }
+            if (activeRoom?.movie_title && !cleanUrl.includes('title=')) {
+                const baseTitle = activeRoom.movie_title.split(' - Episode')[0].trim();
+                cleanUrl += `${cleanUrl.includes('?') ? '&' : '?'}title=${encodeURIComponent(baseTitle)}`;
+            }
+            return cleanUrl;
+        }
+
+        function setPartyNativeOverlay(mode) {
+            const loading = document.getElementById('party-native-loading');
+            const error = document.getElementById('party-native-error');
+            if (!loading || !error) return;
+            loading.classList.toggle('active', mode === 'loading');
+            error.classList.toggle('active', mode === 'error');
+        }
+
+        function destroyPartyArtplayer() {
+            if (partyBufferingTimer) {
+                clearTimeout(partyBufferingTimer);
+                partyBufferingTimer = null;
+            }
+            if (partyArtplayer) {
+                partyArtplayer.destroy();
+                partyArtplayer = null;
+            }
+            partyVideoUrl = '';
+            partyResolutions = [];
+            partySubtitles = [];
+            partyStreamIndex = 0;
+            partyHasPlayed = false;
+        }
+
+        function fixPartySubtitleUrl(subUrl) {
+            const host = window.location.hostname;
+            if (!subUrl.startsWith('/api/cinestream') || (host !== 'localhost' && host !== '127.0.0.1')) {
+                return subUrl;
+            }
+            if (subUrl.includes('proxyUrl=')) {
+                return `http://localhost:3000/api/cinestream/proxy?url=${subUrl.split('proxyUrl=')[1]}`;
+            }
+            if (subUrl.includes('subUrl=')) {
+                return `http://localhost:3000/api/cinestream/proxy?url=${subUrl.split('subUrl=')[1]}`;
+            }
+            return subUrl;
+        }
+
+        function processPartyStreamData(resolveData) {
+            if (!resolveData.stream && (!resolveData.options || resolveData.options.length === 0)) {
+                throw new Error('Streaming resource is offline for this title');
+            }
+            partyResolutions = (resolveData.options || []).map((opt) => ({
+                label: `${opt.quality || 'Auto'} (${(opt.format || 'm3u8').toUpperCase()})`,
+                url: opt.url
+            }));
+            partyStreamIndex = 0;
+            partyHasPlayed = false;
+            const defaultStream = resolveData.stream || resolveData.options[0];
+            partyVideoUrl = defaultStream.url;
+            partySubtitles = (resolveData.captions || []).map((sub, idx) => ({
+                label: sub.language,
+                src: fixPartySubtitleUrl(sub.url),
+                default: idx === 0 || (sub.language || '').toLowerCase() === 'english'
+            }));
+        }
+
+        function initPartyArtplayer() {
+            const container = document.getElementById('party-native-player');
+            if (!container || !partyVideoUrl || typeof Artplayer === 'undefined') return;
+
+            if (partyArtplayer) {
+                partyArtplayer.destroy();
+                partyArtplayer = null;
+            }
+
+            const qualityList = partyResolutions.map((res) => ({
+                html: res.label,
+                url: res.url,
+                default: res.url === partyVideoUrl
+            }));
+
+            const sorted = [...qualityList].sort((a, b) => {
+                if (a.html.includes('1080') && !b.html.includes('1080')) return -1;
+                if (!a.html.includes('1080') && b.html.includes('1080')) return 1;
+                if (a.html.includes('M3U8') && !b.html.includes('M3U8')) return -1;
+                if (!a.html.includes('M3U8') && b.html.includes('M3U8')) return 1;
+                return 0;
+            });
+
+            if (sorted[0]) {
+                partyVideoUrl = sorted[0].url;
+            }
+
+            const finalQualityList = qualityList.map((q) => ({
+                ...q,
+                default: q.url === partyVideoUrl
+            }));
+
+            const subtitleList = partySubtitles.map((sub) => ({
+                html: sub.label,
+                url: sub.src,
+                default: sub.default
+            }));
+            const activeSub = subtitleList.find((s) => s.default);
+            const isM3U8 = partyVideoUrl.toLowerCase().includes('m3u8') || partyVideoUrl.toLowerCase().includes('hls');
+
+            partyArtplayer = new Artplayer({
+                container,
+                url: partyVideoUrl,
+                type: isM3U8 ? 'm3u8' : 'mp4',
+                autoplay: true,
+                playbackRate: true,
+                aspectRatio: true,
+                setting: true,
+                hotkey: true,
+                pip: true,
+                fullscreen: true,
+                fullscreenWeb: true,
+                miniProgressBar: false,
+                theme: '#ff5a1f',
+                quality: finalQualityList.length ? finalQualityList : undefined,
+                customType: {
+                    m3u8(video, url, art) {
+                        if (Hls.isSupported()) {
+                            if (art.hls) art.hls.destroy();
+                            const hls = new Hls({ maxMaxBufferLength: 30, enableWorker: true });
+                            hls.loadSource(url);
+                            hls.attachMedia(video);
+                            art.hls = hls;
+                            art.on('destroy', () => hls.destroy());
+                        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                            video.src = url;
+                        } else {
+                            art.notice.show = 'Unsupported video format';
+                        }
+                    }
+                },
+                subtitle: activeSub ? {
+                    url: activeSub.url,
+                    type: 'vtt',
+                    style: {
+                        color: '#ffffff',
+                        fontSize: '22px',
+                        textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)'
+                    }
+                } : undefined,
+                settings: subtitleList.length ? [
+                    {
+                        html: 'Subtitles',
+                        width: 220,
+                        tooltip: activeSub?.html || 'Off',
+                        selector: [
+                            { html: 'Off', default: !activeSub, url: '' },
+                            ...subtitleList.map((sub) => ({
+                                html: sub.html,
+                                default: sub.default,
+                                url: sub.url
+                            }))
+                        ],
+                        onSelect(item) {
+                            if (!partyArtplayer) return item.html;
+                            if (item.url) {
+                                partyArtplayer.subtitle.url = item.url;
+                                partyArtplayer.subtitle.show = true;
+                            } else {
+                                partyArtplayer.subtitle.show = false;
+                            }
+                            return item.html;
+                        }
+                    }
+                ] : []
+            });
+
+            partyArtplayer.on('video:playing', () => {
+                partyHasPlayed = true;
+                if (partyBufferingTimer) {
+                    clearTimeout(partyBufferingTimer);
+                    partyBufferingTimer = null;
+                }
+            });
+
+            partyArtplayer.on('video:waiting', () => {
+                if (partyHasPlayed) return;
+                if (partyBufferingTimer) clearTimeout(partyBufferingTimer);
+                partyBufferingTimer = setTimeout(tryNextPartyStream, 2500);
+            });
+
+            partyArtplayer.on('video:error', () => tryNextPartyStream());
+
+            applyPartyArtplayerCompactUi(partyArtplayer);
+        }
+
+        function applyPartyArtplayerCompactUi(art) {
+            if (!art || typeof art.cssVar !== 'function') return;
+            art.cssVar('--art-control-height', '34px');
+            art.cssVar('--art-control-icon-size', '20px');
+            art.cssVar('--art-bottom-gap', '0px');
+            art.cssVar('--art-progress-height', '3px');
+            art.cssVar('--art-bottom-offset', '0px');
+        }
+
+        function tryNextPartyStream() {
+            if (partyHasPlayed || partyStreamIndex >= partyResolutions.length - 1) return;
+            partyStreamIndex += 1;
+            partyVideoUrl = partyResolutions[partyStreamIndex].url;
+            if (partyArtplayer) {
+                const isM3U8 = partyVideoUrl.toLowerCase().includes('m3u8');
+                partyArtplayer.switch(partyVideoUrl, isM3U8 ? 'm3u8' : 'mp4');
+                partyArtplayer.notice.show = `Trying backup stream ${partyStreamIndex + 1}/${partyResolutions.length}…`;
+            } else {
+                initPartyArtplayer();
+            }
+        }
+
+        async function loadPartyCinestream(nativeUrl) {
+            partyNativeUrl = nativeUrl;
+            const nativeStage = document.getElementById('party-native-stage');
+            if (nativeStage) nativeStage.style.display = 'block';
+            setPartyNativeOverlay('loading');
+            destroyPartyArtplayer();
+
+            try {
+                const fetchUrl = getCinestreamFetchUrl(nativeUrl);
+                const res = await fetch(fetchUrl);
+                if (!res.ok) throw new Error('CineStream resolver is offline');
+                const data = await res.json();
+                processPartyStreamData(data);
+                setPartyNativeOverlay('hidden');
+                initPartyArtplayer();
+            } catch (err) {
+                const msgEl = document.getElementById('party-native-error-msg');
+                if (msgEl) msgEl.textContent = err.message || 'Failed to load stream';
+                setPartyNativeOverlay('error');
+            }
+        }
+
+        function retryPartyCinestream() {
+            if (partyNativeUrl) loadPartyCinestream(partyNativeUrl);
+        }
+
+        function showEmbedPlayer(embedUrl) {
+            destroyPartyArtplayer();
+            const nativeStage = document.getElementById('party-native-stage');
+            const iframe = document.getElementById('video-player-iframe');
+            if (nativeStage) nativeStage.style.display = 'none';
+            if (iframe) {
+                iframe.style.display = 'block';
+                iframe.src = embedUrl;
+            }
+        }
+
+        function showNativePlayer(nativeUrl) {
+            const iframe = document.getElementById('video-player-iframe');
+            if (iframe) {
+                iframe.style.display = 'none';
+                iframe.src = '';
+            }
+            loadPartyCinestream(nativeUrl);
+        }
+
         function getEmbedUrlForServer(srv, tmdbId, isTvShow, s, e) {
             if (isAnime) {
                 if (activeProvider === 'videasy') {
@@ -1972,9 +2339,7 @@
                 document.getElementById('active-server-name').textContent = matchedName;
                 populateServerDropdown();
 
-                const iframe = document.getElementById('video-player-iframe');
-                iframe.style.display = 'block';
-                iframe.src = getEmbedUrlForServer(null, mediaId, false, 1, episode);
+                showEmbedPlayer(getEmbedUrlForServer(null, mediaId, false, 1, episode));
                 return;
             }
 
@@ -1983,14 +2348,15 @@
                 document.getElementById('active-server-name').textContent = matched.name;
             }
 
-            // Update active state in list
             populateServerDropdown();
 
-            const iframe = document.getElementById('video-player-iframe');
             if (matched) {
-                // Load standard iframe embed
-                iframe.style.display = 'block';
-                iframe.src = getEmbedUrlForServer(matched, mediaId, isTv, season, episode);
+                const embedUrl = getEmbedUrlForServer(matched, mediaId, isTv, season, episode);
+                if (isNativeEmbedUrl(embedUrl)) {
+                    showNativePlayer(embedUrl);
+                } else {
+                    showEmbedPlayer(embedUrl);
+                }
             }
         }
 

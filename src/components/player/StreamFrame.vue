@@ -419,7 +419,7 @@ export default defineComponent({
                 pip: true,
                 fullscreen: true,
                 fullscreenWeb: true,
-                miniProgressBar: true,
+                miniProgressBar: false,
                 theme: '#E50914', // Premium Netflix Red theme
                 quality: finalQualityList,
                 customType: {
@@ -553,6 +553,16 @@ export default defineComponent({
                 isUserManualSwitch.value = true; // User manually changed quality
                 videoUrl.value = quality.url;
             });
+
+            applyArtplayerCompactUi(artplayerInstance);
+        };
+
+        const applyArtplayerCompactUi = (art: Artplayer) => {
+            art.cssVar('--art-control-height', '34px');
+            art.cssVar('--art-control-icon-size', '20px');
+            art.cssVar('--art-bottom-gap', '0px');
+            art.cssVar('--art-progress-height', '3px');
+            art.cssVar('--art-bottom-offset', '0px');
         };
 
         watch(videoUrl, (next) => {
@@ -900,30 +910,5 @@ export default defineComponent({
     }
 }
 
-/* Premium ArtPlayer UI — Seek bar flush against controls */
-:deep(.art-video-player) {
-    /* Compact controls bar */
-    .art-controls {
-        height: 46px !important;
-        background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 100%) !important;
-        padding: 0 var(--s-3) !important;
-    }
-
-    /* Bring seek bar flush to top of controls — no gap */
-    .art-control-progress {
-        bottom: 46px !important;
-        height: 3px !important;
-        transition: height 0.12s ease, bottom 0.12s ease !important;
-
-        &:hover {
-            height: 5px !important;
-            bottom: 44px !important;
-        }
-    }
-
-    /* Subtitles sit just above the control strip */
-    .art-subtitle {
-        bottom: 60px !important;
-    }
-}
+@import url('/artplayer-compact.css');
 </style>
