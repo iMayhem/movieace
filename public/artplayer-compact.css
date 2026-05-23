@@ -53,14 +53,8 @@
     bottom: calc(var(--art-control-height) + 14px) !important;
 }
 
-/* Watch Together: shrink stage to video — controls sit on picture, not empty bar */
-.player-stage--fit-video .art-video-player .art-bottom {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-}
-
-.player-stage--fit-video .art-video-player .art-video {
-    object-fit: contain;
+/* Watch Together: native player fills the stretched stage */
+#party-native-player .art-video-player {
+    width: 100%;
+    height: 100%;
 }

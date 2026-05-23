@@ -666,7 +666,7 @@
             text-decoration: underline;
         }
 
-        /* Iframe stage — 16:9 for embeds; CineStream uses --fit-video to hug picture */
+        /* Video stage — in room view stretches to align bottom with chat column */
         .player-stage {
             background: #000;
             border: 1px solid var(--rule);
@@ -682,25 +682,13 @@
             justify-content: center;
         }
 
-        .player-stage.player-stage--fit-video {
-            aspect-ratio: auto;
-            height: auto;
-            max-height: calc(100vh - 220px);
-            align-items: stretch;
-        }
-
-        .player-stage.player-stage--fit-video #party-native-stage {
-            position: relative;
-            inset: auto;
-            width: 100%;
-            height: auto;
+        body.room-view-active .player-container .player-stage {
             flex: 1 1 auto;
-        }
-
-        .player-stage.player-stage--fit-video #party-native-player,
-        .player-stage.player-stage--fit-video #party-native-player .art-video-player {
-            width: 100% !important;
-            height: auto !important;
+            min-height: 0;
+            aspect-ratio: unset;
+            max-height: none;
+            height: 100%;
+            align-items: stretch;
         }
 
         .player-iframe {
@@ -988,10 +976,14 @@
         
         body.room-view-active .room-workspace {
             gap: 1rem;
+            height: 100%;
+            min-height: 0;
         }
         
         body.room-view-active .player-container {
             gap: 0.5rem;
+            flex: 1 1 auto;
+            min-height: 0;
         }
 
         /* ========================================
@@ -1049,10 +1041,11 @@
             }
 
             /* Optimize player stage for tablet */
-            .player-stage:not(.player-stage--fit-video) {
-                width: 100%;
-                aspect-ratio: 16 / 9;
-                max-height: calc(100vh - 250px);
+            body.room-view-active .player-container .player-stage {
+                flex: 1 1 auto;
+                aspect-ratio: unset;
+                max-height: none;
+                height: 100%;
             }
 
             /* Make buttons more touch-friendly */
@@ -1337,7 +1330,7 @@
             }
 
             /* Player stage: Optimized for mobile viewing */
-            .player-stage:not(.player-stage--fit-video) {
+            .player-stage {
                 width: 100%;
                 aspect-ratio: 16 / 9;
                 max-height: none;
@@ -1345,8 +1338,11 @@
                 flex-shrink: 0;
             }
 
-            .player-stage.player-stage--fit-video {
-                max-height: min(52vh, 100vw * 9 / 16);
+            body.room-view-active .player-container .player-stage {
+                flex: 1 1 auto;
+                aspect-ratio: unset;
+                min-height: 0;
+                max-height: none;
             }
 
             /* ============================================
@@ -1625,8 +1621,7 @@
                 min-height: 0;
             }
 
-            /* Ensure video maintains aspect ratio (iframe embeds only) */
-            .player-stage:not(.player-stage--fit-video) {
+            .player-stage {
                 width: 100%;
                 height: auto;
                 aspect-ratio: 16 / 9;
@@ -1963,7 +1958,6 @@
             document.body.classList.remove('lights-out-mode');
 
             destroyPartyArtplayer();
-            setPartyPlayerStageFitVideo(false);
             const iframe = document.getElementById('video-player-iframe');
             if (iframe) {
                 iframe.src = '';
@@ -2086,19 +2080,6 @@
             error.classList.toggle('active', mode === 'error');
         }
 
-        function setPartyPlayerStageFitVideo(enabled) {
-            const stage = document.querySelector('.player-stage');
-            if (!stage) return;
-            stage.classList.toggle('player-stage--fit-video', !!enabled);
-        }
-
-        function fitPartyPlayerToVideo() {
-            if (!partyArtplayer) return;
-            if (typeof partyArtplayer.autoSize === 'function') {
-                partyArtplayer.autoSize();
-            }
-        }
-
         function destroyPartyArtplayer() {
             if (partyBufferingTimer) {
                 clearTimeout(partyBufferingTimer);
@@ -2194,8 +2175,7 @@
                 type: isM3U8 ? 'm3u8' : 'mp4',
                 autoplay: true,
                 playbackRate: true,
-                aspectRatio: false,
-                autoSize: true,
+                aspectRatio: true,
                 setting: true,
                 hotkey: true,
                 pip: true,
@@ -2272,12 +2252,7 @@
 
             partyArtplayer.on('video:error', () => tryNextPartyStream());
 
-            partyArtplayer.on('ready', () => fitPartyPlayerToVideo());
-            partyArtplayer.on('video:loadedmetadata', () => fitPartyPlayerToVideo());
-            partyArtplayer.on('resize', () => fitPartyPlayerToVideo());
-
             applyPartyArtplayerCompactUi(partyArtplayer);
-            fitPartyPlayerToVideo();
         }
 
         function applyPartyArtplayerCompactUi(art) {
@@ -2304,7 +2279,6 @@
 
         async function loadPartyCinestream(nativeUrl) {
             partyNativeUrl = nativeUrl;
-            setPartyPlayerStageFitVideo(true);
             const nativeStage = document.getElementById('party-native-stage');
             if (nativeStage) nativeStage.style.display = 'block';
             setPartyNativeOverlay('loading');
@@ -2331,7 +2305,6 @@
 
         function showEmbedPlayer(embedUrl) {
             destroyPartyArtplayer();
-            setPartyPlayerStageFitVideo(false);
             const nativeStage = document.getElementById('party-native-stage');
             const iframe = document.getElementById('video-player-iframe');
             if (nativeStage) nativeStage.style.display = 'none';
@@ -2347,7 +2320,6 @@
                 iframe.style.display = 'none';
                 iframe.src = '';
             }
-            setPartyPlayerStageFitVideo(true);
             loadPartyCinestream(nativeUrl);
         }
 
