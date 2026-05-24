@@ -20,7 +20,7 @@ const services = {
     ],
     embedProviders: [
         {
-            name: 'CineStream (Direct)',
+            name: 'Moovie (Direct)',
             url: window.location.origin + '/player.html?type=movie&id=502356',
             testType: 'embed',
             note: 'Internal player'

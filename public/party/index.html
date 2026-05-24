@@ -1810,7 +1810,7 @@
                             <!-- Premium Select Dropdown for all 16 servers -->
                             <div class="server-select-dropdown">
                                 <button class="server-dropdown-trigger" onclick="toggleServerDropdown(event)">
-                                    <span>SERVER: <strong id="active-server-name">CineStream (Direct)</strong></span>
+                                    <span>SERVER: <strong id="active-server-name">Moovie (Direct)</strong></span>
                                     <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
                                 </button>
                                 <div id="server-dropdown-menu" class="server-dropdown-menu">
@@ -1840,12 +1840,12 @@
                             <div id="party-native-loading" class="party-native-overlay active">
                                 <div class="party-native-spinner"></div>
                                 <h3>Striking direct stream</h3>
-                                <p>Contacting CineStream resolvers…</p>
+                                <p>Contacting Moovie resolvers…</p>
                             </div>
                             <div id="party-native-error" class="party-native-overlay">
                                 <h3>Unable to play stream</h3>
                                 <p id="party-native-error-msg">All mirrors returned offline.</p>
-                                <button type="button" class="party-native-retry" onclick="retryPartyCinestream()">Retry</button>
+                                <button type="button" class="party-native-retry" onclick="retryPartyMoovie()">Retry</button>
                             </div>
                             <div id="party-native-player"></div>
                         </div>
@@ -1945,7 +1945,7 @@
 
         // Available Stream Servers
         const serversList = [
-            { id: 'cinestream', name: 'CineStream (Direct)', movie: 'NATIVE:/api/cinestream?type=movie&id={tmdbId}', tv: 'NATIVE:/api/cinestream?type=tv&id={tmdbId}&season={season}&episode={episode}' },
+            { id: 'cinestream', name: 'Moovie (Direct)', movie: 'NATIVE:/api/cinestream?type=movie&id={tmdbId}', tv: 'NATIVE:/api/cinestream?type=tv&id={tmdbId}&season={season}&episode={episode}' },
             { id: 'vidlink', name: 'VidLink', movie: 'https://vidlink.pro/movie/{tmdbId}?primaryColor=6366f1', tv: 'https://vidlink.pro/tv/{tmdbId}/{season}/{episode}?primaryColor=6366f1' },
             { id: 'videasy', name: 'VidEasy', movie: 'https://player.videasy.net/movie/{tmdbId}?color=6366f1', tv: 'https://player.videasy.net/tv/{tmdbId}/{season}/{episode}?color=6366f1' },
             { id: 'vidsrc', name: 'VidSrc (to)', movie: 'https://vidsrc.to/embed/movie/{tmdbId}', tv: 'https://vidsrc.to/embed/tv/{tmdbId}/{season}/{episode}' },
@@ -2362,7 +2362,7 @@
 
             try {
                 const fetchUrl = getCinestreamFetchUrl(nativeUrl);
-                console.log(`[Party CineStream] Attempt ${retryCount + 1}/${maxRetries + 1}: ${fetchUrl}`);
+                console.log(`[Party Moovie] Attempt ${retryCount + 1}/${maxRetries + 1}: ${fetchUrl}`);
                 
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased to 20 second timeout
@@ -2379,9 +2379,9 @@
                 if (!res.ok) {
                     // For 404, it's likely a cold start - definitely retry
                     if (res.status === 404) {
-                        throw new Error(`CineStream API cold start (404) - retrying...`);
+                        throw new Error(`Moovie API cold start (404) - retrying...`);
                     }
-                    throw new Error(`CineStream API returned ${res.status}`);
+                    throw new Error(`Moovie API returned ${res.status}`);
                 }
                 
                 const data = await res.json();
@@ -2394,15 +2394,15 @@
                 processPartyStreamData(data);
                 setPartyNativeOverlay('hidden');
                 initPartyArtplayer();
-                console.log('[Party CineStream] Successfully loaded stream');
+                console.log('[Party Moovie] Successfully loaded stream');
             } catch (err) {
-                console.error(`[Party CineStream] Error on attempt ${retryCount + 1}:`, err);
+                console.error(`[Party Moovie] Error on attempt ${retryCount + 1}:`, err);
                 
                 // Auto-retry if we haven't exceeded max retries
                 if (retryCount < maxRetries) {
                     const nextAttempt = retryCount + 2;
                     const delaySeconds = Math.round(retryDelay / 1000);
-                    console.log(`[Party CineStream] Retrying in ${delaySeconds}s... (attempt ${nextAttempt}/${maxRetries + 1})`);
+                    console.log(`[Party Moovie] Retrying in ${delaySeconds}s... (attempt ${nextAttempt}/${maxRetries + 1})`);
                     
                     const msgEl = document.getElementById('party-native-error-msg');
                     if (msgEl) {
@@ -2426,7 +2426,7 @@
             }
         }
 
-        function retryPartyCinestream() {
+        function retryPartyMoovie() {
             if (partyNativeUrl) loadPartyCinestream(partyNativeUrl, 0);
         }
 

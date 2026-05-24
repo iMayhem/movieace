@@ -232,7 +232,7 @@ export default defineComponent({
 
                     console.log(`[StreamFrame] Native direct fetch: ${cleanUrl}`);
                     const resolveRes = await fetch(cleanUrl);
-                    if (!resolveRes.ok) throw new Error('CineStream resolver is offline');
+                    if (!resolveRes.ok) throw new Error('Moovie resolver is offline');
                     resolveData = await resolveRes.json();
                 } else {
                     const titleEnc = encodeURIComponent(props.title);
@@ -260,7 +260,7 @@ export default defineComponent({
                 processStreamData(resolveData);
 
             } catch (err: any) {
-                // Check if this is a CineStream "no videos" case
+                // Check if this is a Moovie "no videos" case
                 if (err.message && err.message.includes('No videos found')) {
                     resolveError.value = err.message;
                     // Don't log as error since this is expected behavior
@@ -277,11 +277,11 @@ export default defineComponent({
 
         // Helper function to process stream data (used by both cached and fresh data)
         const processStreamData = (resolveData: any) => {
-            // Check if CineStream returned no videos
+            // Check if Moovie returned no videos
             if (!resolveData.stream && (!resolveData.options || resolveData.options.length === 0)) {
-                // Check if this is a CineStream request
+                // Check if this is a Moovie request
                 if (props.embedUrl.includes('cinestream') || props.embedUrl.includes('NATIVE:')) {
-                    console.log('[StreamFrame] CineStream returned no videos, switching to VidKing...');
+                    console.log('[StreamFrame] Moovie returned no videos, switching to VidKing...');
                     
                     // Auto-switch to VidKing (server index 1) after a short delay
                     setTimeout(() => {
