@@ -90,10 +90,13 @@ export class LRUCache<K, V> {
     }
 
     // Move to end (most recently used)
-    const value = this.cache.get(key)!;
-    this.cache.delete(key);
-    this.cache.set(key, value);
-    return value;
+    const value = this.cache.get(key);
+    if (value !== undefined) {
+      this.cache.delete(key);
+      this.cache.set(key, value);
+      return value;
+    }
+    return undefined;
   }
 
   set(key: K, value: V): void {
@@ -137,8 +140,9 @@ export function memoizeWithLRU<T extends any[], R>(
   return (...args: T): R => {
     const key = JSON.stringify(args);
 
-    if (cache.has(key)) {
-      return cache.get(key)!;
+    const cached = cache.get(key);
+    if (cached !== undefined) {
+      return cached;
     }
 
     const result = fn(...args);
