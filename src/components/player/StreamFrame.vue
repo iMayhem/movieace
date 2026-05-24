@@ -18,7 +18,10 @@
                         <div class="stream-frame__skeleton" aria-hidden="true" />
                         <div class="stream-frame__loader">
                             <div class="stream-frame__spinner" aria-hidden="true" />
-                            <p class="meta">Striking the high-performance print…</p>
+                            <p class="meta">
+                                <template v-if="autoRetryCount > 0">Retrying… ({{ autoRetryCount }}/{{ MAX_AUTO_RETRIES }})</template>
+                                <template v-else>Striking the high-performance print…</template>
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -108,6 +111,9 @@ export default defineComponent({
         const resolutions = ref<Array<{ label: string; url: string }>>([]);
         const isResolving = ref(false);
         const resolveError = ref('');
+        const autoRetryCount = ref(0);
+        const MAX_AUTO_RETRIES = 5;
+        let autoRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
         // Auto-fallback mechanism
         const currentStreamIndex = ref(0);
@@ -192,9 +198,50 @@ export default defineComponent({
             }
         };
 
-        // Resolves stream links
-        const resolveStream = async () => {
+        // Internal single-attempt fetch
+        const _attemptResolve = async (): Promise<any> => {
+            const type = props.mediaType;
+
+            if (props.embedUrl.startsWith('NATIVE:')) {
+                let cleanUrl = props.embedUrl.substring(7);
+                if (cleanUrl.startsWith('/api/cinestream') && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+                    cleanUrl = `http://localhost:3000/api/cinestream/resolve${cleanUrl.substring(15)}`;
+                }
+                console.log(`[StreamFrame] Native direct fetch: ${cleanUrl}`);
+                const resolveRes = await fetch(cleanUrl);
+                if (!resolveRes.ok) throw new Error('Moovie resolver is offline');
+                return await resolveRes.json();
+            } else {
+                const titleEnc = encodeURIComponent(props.title);
+                const searchUrl = `https://api.moovie.fun/vps-proxy/search?q=${titleEnc}&type=${type === 'movie' ? 'movie' : 'tv'}`;
+                const searchRes = await fetch(searchUrl);
+                if (!searchRes.ok) throw new Error('Metadata resolver is currently offline');
+                const searchData = await searchRes.json();
+                const item = searchData.results?.[0];
+                if (!item) throw new Error('No matching streaming source found');
+                const detailPath = item.raw?.detailPath || item.pageUrl;
+                const subjectId = item.id;
+                const resolveUrl = `https://api.moovie.fun/vps-proxy/resolve?detailPath=${encodeURIComponent(detailPath)}&subjectId=${subjectId}&type=${type}&season=${props.season}&episode=${props.episode}`;
+                const resolveRes = await fetch(resolveUrl);
+                if (!resolveRes.ok) throw new Error('Failed to resolve media stream URLs');
+                return await resolveRes.json();
+            }
+        };
+
+        // Resolves stream links — with auto-retry on failure
+        const resolveStream = async (isAutoRetry = false) => {
             if (!isNative.value) return;
+
+            // Clear any pending auto-retry timer
+            if (autoRetryTimer) {
+                clearTimeout(autoRetryTimer);
+                autoRetryTimer = null;
+            }
+
+            // Reset retry counter only if this is a fresh user-initiated resolve
+            if (!isAutoRetry) {
+                autoRetryCount.value = 0;
+            }
 
             // Priority 3: Check prefetch cache first
             const cachedData = getCachedStream(
@@ -208,6 +255,8 @@ export default defineComponent({
                 console.log('[StreamFrame] Using prefetched stream data');
                 isResolving.value = false;
                 isLoading.value = false;
+                resolveError.value = '';
+                autoRetryCount.value = 0;
                 processStreamData(cachedData);
                 return;
             }
@@ -219,59 +268,38 @@ export default defineComponent({
             resolutions.value = [];
 
             try {
-                const type = props.mediaType;
-                let resolveData;
-
-                if (props.embedUrl.startsWith('NATIVE:')) {
-                    let cleanUrl = props.embedUrl.substring(7); // Strip 'NATIVE:'
-                    
-                    // If in local development, route to local scraper running on port 3000
-                    if (cleanUrl.startsWith('/api/cinestream') && typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-                        cleanUrl = `http://localhost:3000/api/cinestream/resolve${cleanUrl.substring(15)}`;
-                    }
-
-                    console.log(`[StreamFrame] Native direct fetch: ${cleanUrl}`);
-                    const resolveRes = await fetch(cleanUrl);
-                    if (!resolveRes.ok) throw new Error('Moovie resolver is offline');
-                    resolveData = await resolveRes.json();
-                } else {
-                    const titleEnc = encodeURIComponent(props.title);
-
-                    // Step 1: Search API to get the correct subject ID and detailPath
-                    const searchUrl = `https://api.moovie.fun/vps-proxy/search?q=${titleEnc}&type=${type === 'movie' ? 'movie' : 'tv'}`;
-                    const searchRes = await fetch(searchUrl);
-                    if (!searchRes.ok) throw new Error('Metadata resolver is currently offline');
-                    
-                    const searchData = await searchRes.json();
-                    const item = searchData.results?.[0];
-                    if (!item) throw new Error('No matching streaming source found');
-
-                    const detailPath = item.raw?.detailPath || item.pageUrl;
-                    const subjectId = item.id;
-
-                    // Step 2: Resolve stream options and subtitles
-                    const resolveUrl = `https://api.moovie.fun/vps-proxy/resolve?detailPath=${encodeURIComponent(detailPath)}&subjectId=${subjectId}&type=${type}&season=${props.season}&episode=${props.episode}`;
-                    const resolveRes = await fetch(resolveUrl);
-                    if (!resolveRes.ok) throw new Error('Failed to resolve media stream URLs');
-
-                    resolveData = await resolveRes.json();
-                }
-
+                const resolveData = await _attemptResolve();
+                autoRetryCount.value = 0; // Success — reset counter
                 processStreamData(resolveData);
 
             } catch (err: any) {
-                // Check if this is a Moovie "no videos" case
-                if (err.message && err.message.includes('No videos found')) {
+                const isNoVideos = err.message && err.message.includes('No videos found');
+
+                if (isNoVideos) {
+                    // Hard stop — no point retrying
                     resolveError.value = err.message;
-                    // Don't log as error since this is expected behavior
                     console.log('[StreamFrame]', err.message);
+                } else if (autoRetryCount.value < MAX_AUTO_RETRIES) {
+                    // Auto-retry: silently retry after 3 seconds
+                    autoRetryCount.value++;
+                    console.log(`[StreamFrame] Resolve failed (${autoRetryCount.value}/${MAX_AUTO_RETRIES}), retrying in 3s...`, err.message);
+                    // Stay in resolving state (keep spinner), schedule next attempt
+                    isResolving.value = true;
+                    autoRetryTimer = setTimeout(() => {
+                        resolveStream(true);
+                    }, 3000);
+                    return; // Don't hit the finally block below yet
                 } else {
+                    // All retries exhausted — show the error screen
                     resolveError.value = err.message || 'Failed to strike print';
-                    console.error('[STREAM_RESOLVER_ERROR]', err);
+                    console.error('[STREAM_RESOLVER_ERROR] All retries exhausted', err);
+                    autoRetryCount.value = 0;
                 }
             } finally {
-                isResolving.value = false;
-                isLoading.value = false;
+                if (!autoRetryTimer) {
+                    isResolving.value = false;
+                    isLoading.value = false;
+                }
             }
         };
 
@@ -665,6 +693,10 @@ export default defineComponent({
                 clearTimeout(bufferingTimeout);
                 bufferingTimeout = null;
             }
+            if (autoRetryTimer) {
+                clearTimeout(autoRetryTimer);
+                autoRetryTimer = null;
+            }
             if (artplayerInstance) {
                 artplayerInstance.destroy();
                 artplayerInstance = null;
@@ -689,6 +721,8 @@ export default defineComponent({
             resolutions,
             isResolving,
             resolveError,
+            autoRetryCount,
+            MAX_AUTO_RETRIES,
             onLoad,
             onError,
             retry,

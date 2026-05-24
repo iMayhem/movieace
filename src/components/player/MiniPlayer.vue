@@ -2,7 +2,7 @@
     <Teleport to="body">
         <Transition name="mini">
             <aside
-                v-if="isActive && state"
+                v-if="isActive && state && !isMobile"
                 class="mini-player"
                 role="complementary"
                 aria-label="Mini player"
@@ -55,7 +55,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, watch } from 'vue';
+import { computed, defineComponent, watch, ref, onMounted, onUnmounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useMiniPlayer } from '../../composables/useMiniPlayer';
 
@@ -65,6 +65,27 @@ export default defineComponent({
         const route = useRoute();
         const router = useRouter();
         const { state, isActive, show, hide, clear } = useMiniPlayer();
+
+        const isMobile = ref(false);
+        let mediaQuery: MediaQueryList | null = null;
+
+        const updateMobile = (e: MediaQueryListEvent | MediaQueryList) => {
+            isMobile.value = e.matches;
+        };
+
+        onMounted(() => {
+            if (typeof window !== 'undefined') {
+                mediaQuery = window.matchMedia('(max-width: 768px)');
+                isMobile.value = mediaQuery.matches;
+                mediaQuery.addEventListener('change', updateMobile);
+            }
+        });
+
+        onUnmounted(() => {
+            if (mediaQuery) {
+                mediaQuery.removeEventListener('change', updateMobile);
+            }
+        });
 
         const isWatchRoute = computed(() => {
             const name = String(route.name || '');
@@ -102,6 +123,7 @@ export default defineComponent({
         return {
             state,
             isActive,
+            isMobile,
             subtitle,
             resume,
             dismiss
@@ -216,10 +238,8 @@ export default defineComponent({
         svg { width: 18px; height: 18px; }
     }
 
-    @media (max-width: 540px) {
-        right: var(--s-3);
-        bottom: var(--s-3);
-        width: min(320px, 92vw);
+    @media (max-width: 768px) {
+        display: none !important;
     }
 }
 
