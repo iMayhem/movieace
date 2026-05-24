@@ -2225,7 +2225,8 @@
             const activeSub = subtitleList.find((s) => s.default);
             const isM3U8 = partyVideoUrl.toLowerCase().includes('m3u8') || partyVideoUrl.toLowerCase().includes('hls');
 
-            partyArtplayer = new Artplayer({
+            // Build Artplayer config
+            const artplayerConfig = {
                 container,
                 url: partyVideoUrl,
                 type: isM3U8 ? 'm3u8' : 'mp4',
@@ -2256,15 +2257,6 @@
                         }
                     }
                 },
-                subtitle: activeSub ? {
-                    url: activeSub.url,
-                    type: 'vtt',
-                    style: {
-                        color: '#ffffff',
-                        fontSize: '22px',
-                        textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)'
-                    }
-                } : undefined,
                 settings: subtitleList.length ? [
                     {
                         html: 'Subtitles',
@@ -2290,7 +2282,22 @@
                         }
                     }
                 ] : []
-            });
+            };
+
+            // Only add subtitle config if we have a valid subtitle
+            if (activeSub && activeSub.url) {
+                artplayerConfig.subtitle = {
+                    url: activeSub.url,
+                    type: 'vtt',
+                    style: {
+                        color: '#ffffff',
+                        fontSize: '22px',
+                        textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)'
+                    }
+                };
+            }
+
+            partyArtplayer = new Artplayer(artplayerConfig);
 
             partyArtplayer.on('video:playing', () => {
                 partyHasPlayed = true;
