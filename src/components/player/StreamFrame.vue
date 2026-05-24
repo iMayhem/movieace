@@ -260,8 +260,15 @@ export default defineComponent({
                 processStreamData(resolveData);
 
             } catch (err: any) {
-                resolveError.value = err.message || 'Failed to strike print';
-                console.error('[STREAM_RESOLVER_ERROR]', err);
+                // Check if this is a CineStream "no videos" case
+                if (err.message && err.message.includes('No videos found')) {
+                    resolveError.value = err.message;
+                    // Don't log as error since this is expected behavior
+                    console.log('[StreamFrame]', err.message);
+                } else {
+                    resolveError.value = err.message || 'Failed to strike print';
+                    console.error('[STREAM_RESOLVER_ERROR]', err);
+                }
             } finally {
                 isResolving.value = false;
                 isLoading.value = false;
@@ -275,13 +282,14 @@ export default defineComponent({
                 // Check if this is a CineStream request
                 if (props.embedUrl.includes('cinestream') || props.embedUrl.includes('NATIVE:')) {
                     console.log('[StreamFrame] CineStream returned no videos, switching to VidKing...');
-                    resolveError.value = 'No videos found. Switching to VidKing...';
                     
                     // Auto-switch to VidKing (server index 1) after a short delay
                     setTimeout(() => {
                         emit('switch-to-server', 1); // VidKing is at index 1
                     }, 1500);
-                    return;
+                    
+                    // Throw error to be caught and displayed
+                    throw new Error('No videos found. Switching to VidKing...');
                 }
                 throw new Error('Streaming resource is currently offline for this item');
             }
