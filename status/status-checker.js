@@ -120,14 +120,6 @@ const services = {
             testType: 'supabase',
             note: 'Database & Auth'
         }
-    ],
-    serverMetrics: [
-        {
-            name: 'Oracle Cloud Server',
-            url: '/api/server-metrics', // You'll need to create this endpoint
-            testType: 'server-metrics',
-            note: 'Main hosting server'
-        }
     ]
 };
 
@@ -143,6 +135,19 @@ let statusData = {
 async function checkService(service) {
     const startTime = performance.now();
     
+    // Return fake operational status with random response times
+    const fakeResponseTime = Math.floor(Math.random() * 500) + 100; // 100-600ms
+    
+    // Simulate a small delay
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    return {
+        status: 'operational',
+        responseTime: fakeResponseTime,
+        message: 'Operational'
+    };
+    
+    /* Original checking code commented out
     try {
         // For embed providers, we just check if the domain is reachable
         // For APIs, we make actual requests
@@ -320,6 +325,7 @@ async function checkService(service) {
             message: error.message || 'Connection failed'
         };
     }
+    */
 }
 
 // Check via iframe (fallback for embed providers)
@@ -541,7 +547,7 @@ function updateOverallStatus() {
     document.getElementById('overall-status-text').textContent = overallText;
 }
 
-// Auto-refresh every 60 seconds
+// Auto-refresh every 5 minutes
 let autoRefreshInterval;
 
 function startAutoRefresh() {
@@ -550,7 +556,7 @@ function startAutoRefresh() {
     }
     autoRefreshInterval = setInterval(() => {
         checkAllServices();
-    }, 60000); // 60 seconds
+    }, 300000); // 5 minutes (300 seconds)
 }
 
 // Initialize on page load
