@@ -2045,11 +2045,13 @@
                 display: none !important;
             }
 
-            /* Make the main stage fill the entire viewport height */
+            /* Make the main stage fill the entire viewport height (use dvh to account for mobile browser toolbars) */
             body.room-view-active main {
                 padding: 0 !important;
                 height: 100vh !important;
+                height: 100dvh !important;
                 max-height: 100vh !important;
+                max-height: 100dvh !important;
                 display: flex !important;
                 flex-direction: column !important;
                 overflow: hidden !important;
@@ -2067,6 +2069,12 @@
                 width: 100% !important;
                 height: 100% !important;
                 border-radius: var(--r-sm) !important;
+            }
+
+            /* CRITICAL: Override default max-height constraint which was squishing the video player */
+            body.room-view-active .player-container .player-stage {
+                max-height: none !important;
+                aspect-ratio: unset !important;
             }
         }
 
@@ -2170,6 +2178,7 @@
                 height: auto !important;
                 min-height: 0 !important;
                 background: #000 !important;
+                max-height: none !important; /* CRITICAL: Prevent squishing in landscape! */
             }
 
             /* Optimize chat components inside sidebar */
@@ -2204,12 +2213,13 @@
                 max-width: 90% !important;
             }
 
-            /* Ultra-compact chat input container */
+            /* Ultra-compact chat input container and form */
             body.room-view-active .chat-input-container {
                 padding: 0.25rem !important;
                 gap: 0.25rem !important;
                 background: rgba(0, 0, 0, 0.4) !important;
                 border-top: 1px solid var(--rule) !important;
+                margin-bottom: 0 !important; /* Flush with viewport bottom */
             }
 
             body.room-view-active .chat-text-input {
