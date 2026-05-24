@@ -1,42 +1,59 @@
 /* Shared compact CineStream / Artplayer chrome (main site + Watch Together) */
 .art-video-player {
-    --art-control-height: 34px;
-    --art-control-icon-size: 20px;
-    --art-control-icon-scale: 0.92;
+    --art-control-height: 40px;
+    --art-control-icon-size: 22px;
+    --art-control-icon-scale: 1;
     --art-bottom-gap: 0px;
     --art-bottom-offset: 0px;
-    --art-progress-height: 3px;
+    --art-progress-height: 4px;
     --art-progress-top-gap: 0px;
-    --art-padding: 8px;
+    --art-padding: 10px;
     --art-mini-progress-height: 2px;
     /* Total bottom chrome = seek bar + control row (matches main site) */
     --art-bottom-height: calc(var(--art-control-height) + var(--art-progress-height));
 }
 
 .art-video-player .art-bottom {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
     height: var(--art-bottom-height) !important;
     padding: 0 !important;
     margin: 0 !important;
 }
 
 .art-video-player .art-controls {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
     height: var(--art-control-height) !important;
     min-height: var(--art-control-height) !important;
     max-height: var(--art-control-height) !important;
-    padding: 0 10px !important;
-    background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.88) 100%) !important;
+    padding: 0 12px !important;
+    background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.9) 100%) !important;
 }
 
 .art-video-player .art-control-progress {
+    position: absolute !important;
     bottom: var(--art-control-height) !important;
+    left: 0 !important;
+    right: 0 !important;
     height: var(--art-progress-height) !important;
     padding: 0 !important;
     margin: 0 !important;
+    z-index: 10 !important;
 }
 
 .art-video-player .art-control-progress:hover {
-    height: 5px !important;
-    bottom: calc(var(--art-control-height) - 2px) !important;
+    height: 6px !important;
+    bottom: calc(var(--art-control-height) - 1px) !important;
+}
+
+.art-video-player .art-progress-indicator {
+    display: block !important;
 }
 
 .art-video-player .art-controls-left,
@@ -44,20 +61,21 @@
 .art-video-player .art-controls-right {
     height: 100%;
     align-items: center;
+    display: flex !important;
 }
 
 .art-video-player .art-control-time {
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1;
-    padding: 0 4px;
+    padding: 0 6px;
 }
 
 .art-video-player .art-control-volume .art-volume-panel {
-    bottom: calc(var(--art-control-height) + 6px);
+    bottom: calc(var(--art-control-height) + 8px);
 }
 
 .art-video-player .art-subtitle {
-    bottom: calc(var(--art-control-height) + 14px) !important;
+    bottom: calc(var(--art-control-height) + var(--art-progress-height) + 20px) !important;
 }
 
 /* Watch Together: player shell fills stage; controls pin to bottom like main site */
@@ -81,8 +99,23 @@ body.room-view-active #party-native-player .art-video-player {
 }
 
 body.room-view-active #party-native-player .art-video-player .art-bottom {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: absolute !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+}
+
+body.room-view-active #party-native-player .art-video-player .art-controls {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+}
+
+body.room-view-active #party-native-player .art-video-player .art-control-progress {
+    position: absolute !important;
+    bottom: var(--art-control-height) !important;
+    left: 0 !important;
+    right: 0 !important;
 }
