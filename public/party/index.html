@@ -527,28 +527,6 @@
             gap: 0.75rem;
         }
 
-        .leave-lobby-btn {
-            background: transparent;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: var(--bone-200);
-            padding: 0.4rem 0.85rem;
-            border-radius: var(--r-sm);
-            font-family: var(--font-ui);
-            font-size: 0.8rem;
-            font-weight: 500;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            transition: all var(--dur-fast);
-        }
-
-        .leave-lobby-btn:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.25);
-            color: var(--bone-50);
-        }
-
         .workspace-title {
             font-family: var(--font-display);
             font-size: 1.45rem;
@@ -1101,8 +1079,7 @@
 
             /* Larger touch targets for controls */
             .server-dropdown-trigger,
-            .lights-out-btn,
-            .leave-lobby-btn {
+            .lights-out-btn {
                 min-height: 44px;
                 padding: 0.6rem 1rem;
                 font-size: 0.9rem;
@@ -1359,14 +1336,6 @@
                 min-width: 0;
             }
 
-            .leave-lobby-btn {
-                padding: 0.35rem 0.6rem;
-                font-size: 0.7rem;
-                min-height: 32px;
-                white-space: nowrap;
-                flex-shrink: 0;
-            }
-
             /* Compact controls - single row */
             .workspace-controls {
                 display: flex;
@@ -1605,7 +1574,6 @@
                 font-size: 0.8rem;
             }
 
-            .leave-lobby-btn,
             .server-dropdown-trigger,
             .lights-out-btn {
                 font-size: 0.65rem;
@@ -1741,7 +1709,6 @@
                 font-size: 0.75rem;
             }
 
-            .leave-lobby-btn,
             .server-dropdown-trigger,
             .lights-out-btn {
                 font-size: 0.65rem;
@@ -1995,7 +1962,6 @@
                 font-size: 0.85rem;
             }
 
-            .leave-lobby-btn,
             .server-dropdown-trigger,
             .lights-out-btn {
                 font-size: 0.7rem;
@@ -2163,7 +2129,6 @@
             }
 
             /* Make all workspace buttons ultra-compact and aligned */
-            body.room-view-active .leave-lobby-btn,
             body.room-view-active .server-dropdown-trigger,
             body.room-view-active .lights-out-btn {
                 font-size: 0.65rem !important;
@@ -2377,10 +2342,6 @@
                     
                     <div class="workspace-header">
                         <div class="workspace-title-area">
-                            <button class="leave-lobby-btn" onclick="showLobbyView()">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                                Leave Lobby
-                            </button>
                             <h2 id="room-playing-title" class="workspace-title">Feature Title</h2>
                         </div>
                         
@@ -2395,10 +2356,6 @@
                                     <!-- Populated dynamically -->
                                 </div>
                             </div>
-                            
-                            <button class="lights-out-btn" onclick="toggleLightsOut()">
-                                💡 Lights Out
-                            </button>
                         </div>
                     </div>
 
@@ -2428,6 +2385,13 @@
                             <div id="party-native-player"></div>
                         </div>
                         <iframe id="video-player-iframe" class="player-iframe" allowfullscreen allow="autoplay; fullscreen; encrypted-media; picture-in-picture"></iframe>
+                    </div>
+
+                    <!-- Lights Out Button (moved below video) -->
+                    <div style="margin-top: 0.75rem; display: flex; justify-content: center;">
+                        <button class="lights-out-btn" onclick="toggleLightsOut()">
+                            💡 Lights Out
+                        </button>
                     </div>
 
                     <!-- Autoplay and Navigation Controls -->
