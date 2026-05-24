@@ -854,6 +854,11 @@ export default defineComponent({
     }
 }
 
+// Hide scroll car on all watch/stream pages
+:global(.scroll-car-container) {
+    display: none !important;
+}
+
 .language-switcher {
     background: var(--ink-800);
     border: 1px solid var(--rule);
