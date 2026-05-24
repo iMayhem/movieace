@@ -501,6 +501,7 @@
             gap: 0.75rem;
             height: 100%;
             min-height: 0;
+            overflow: visible;
         }
 
         /* Replicating screenshot title header */
@@ -600,7 +601,7 @@
             width: 210px;
             max-height: 280px;
             overflow-y: auto;
-            z-index: 200;
+            z-index: 1000;
             box-shadow: var(--shadow-lg);
             padding: 0.4rem;
             animation: slideDown 0.15s var(--ease-out);
@@ -719,8 +720,8 @@
             flex: 1 1 auto;
             min-height: 0;
             aspect-ratio: unset;
-            max-height: none;
-            height: 100%;
+            max-height: calc(100vh - 280px);
+            height: auto;
             align-items: stretch;
         }
 
@@ -1077,8 +1078,8 @@
             body.room-view-active .player-container .player-stage {
                 flex: 1 1 auto;
                 aspect-ratio: unset;
-                max-height: none;
-                height: 100%;
+                max-height: calc(100vh - 280px);
+                height: auto;
             }
 
             /* Make buttons more touch-friendly */
@@ -1389,7 +1390,7 @@
                 flex: 1 1 auto;
                 aspect-ratio: unset;
                 min-height: 0;
-                max-height: none;
+                max-height: calc(100vh - 300px);
             }
 
             /* ============================================
@@ -1599,7 +1600,7 @@
 
             /* Make player fill available height */
             .player-stage {
-                height: 100%;
+                height: auto;
                 aspect-ratio: auto;
                 max-height: calc(100vh - 120px);
             }
@@ -2323,11 +2324,11 @@
             art.cssVar('--art-control-height', '34px');
             art.cssVar('--art-control-icon-size', '20px');
             art.cssVar('--art-control-icon-scale', '0.92');
-            art.cssVar('--art-bottom-gap', '0px');
+            art.cssVar('--art-bottom-gap', '8px');
             art.cssVar('--art-progress-height', '3px');
-            art.cssVar('--art-bottom-offset', '0px');
+            art.cssVar('--art-bottom-offset', '8px');
             art.cssVar('--art-padding', '8px');
-            art.cssVar('--art-bottom-height', '37px');
+            art.cssVar('--art-bottom-height', '45px');
         }
 
         function tryNextPartyStream() {
