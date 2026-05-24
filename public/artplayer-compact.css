@@ -11,6 +11,15 @@
     --art-mini-progress-height: 2px;
     /* Total bottom chrome = seek bar + control row (matches main site) */
     --art-bottom-height: calc(var(--art-control-height) + var(--art-progress-height) + 4px);
+    overflow: visible !important;
+}
+
+.art-video-player .art-video {
+    z-index: 1 !important;
+}
+
+.art-video-player .art-layers {
+    z-index: 10 !important;
 }
 
 .art-video-player .art-bottom {
@@ -24,6 +33,7 @@
     margin: 0 !important;
     display: flex !important;
     flex-direction: column !important;
+    z-index: 20 !important;
 }
 
 .art-video-player .art-controls {
@@ -36,7 +46,7 @@
     max-height: var(--art-control-height) !important;
     padding: 0 12px !important;
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.95) 100%) !important;
-    z-index: 5 !important;
+    z-index: 25 !important;
     order: 2 !important;
 }
 
@@ -48,7 +58,7 @@
     height: var(--art-progress-height) !important;
     padding: 4px 0 !important;
     margin: 0 !important;
-    z-index: 10 !important;
+    z-index: 30 !important;
     order: 1 !important;
     background: rgba(0, 0, 0, 0.7) !important;
 }
@@ -63,6 +73,7 @@
     width: 14px !important;
     height: 14px !important;
     margin-top: -5px !important;
+    z-index: 35 !important;
 }
 
 .art-video-player .art-progress-indicator:hover {
@@ -76,6 +87,7 @@
     height: 100%;
     align-items: center;
     display: flex !important;
+    z-index: 26 !important;
 }
 
 .art-video-player .art-control-time {
@@ -86,16 +98,30 @@
 
 .art-video-player .art-control-volume .art-volume-panel {
     bottom: calc(var(--art-control-height) + 8px);
+    z-index: 100 !important;
 }
 
 .art-video-player .art-subtitle {
     bottom: calc(var(--art-bottom-height) + 20px) !important;
+    z-index: 15 !important;
+}
+
+/* Settings panel and quality selector */
+.art-video-player .art-setting,
+.art-video-player .art-contextmenus,
+.art-video-player .art-info {
+    z-index: 100 !important;
+}
+
+.art-video-player .art-quality {
+    z-index: 100 !important;
 }
 
 /* Watch Together: player shell fills stage; controls pin to bottom like main site */
 body.room-view-active #party-native-stage {
     position: absolute;
     inset: 0;
+    overflow: visible !important;
 }
 
 body.room-view-active #party-native-player {
@@ -103,6 +129,7 @@ body.room-view-active #party-native-player {
     inset: 0;
     width: 100%;
     height: 100%;
+    overflow: visible !important;
 }
 
 body.room-view-active #party-native-player .art-video-player {
@@ -110,6 +137,7 @@ body.room-view-active #party-native-player .art-video-player {
     inset: 0 !important;
     width: 100% !important;
     height: 100% !important;
+    overflow: visible !important;
 }
 
 body.room-view-active #party-native-player .art-video-player .art-bottom {
@@ -118,6 +146,7 @@ body.room-view-active #party-native-player .art-video-player .art-bottom {
     right: 0 !important;
     bottom: 0 !important;
     top: auto !important;
+    z-index: 20 !important;
 }
 
 body.room-view-active #party-native-player .art-video-player .art-controls {
@@ -125,6 +154,7 @@ body.room-view-active #party-native-player .art-video-player .art-controls {
     bottom: auto !important;
     left: 0 !important;
     right: 0 !important;
+    z-index: 25 !important;
 }
 
 body.room-view-active #party-native-player .art-video-player .art-control-progress {
@@ -132,4 +162,14 @@ body.room-view-active #party-native-player .art-video-player .art-control-progre
     bottom: auto !important;
     left: 0 !important;
     right: 0 !important;
+    z-index: 30 !important;
+}
+
+/* Ensure player stage doesn't clip controls */
+.player-stage {
+    overflow: visible !important;
+}
+
+#party-native-stage {
+    overflow: visible !important;
 }
