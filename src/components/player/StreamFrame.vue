@@ -290,10 +290,23 @@ export default defineComponent({
                     }, 3000);
                     return; // Don't hit the finally block below yet
                 } else {
-                    // All retries exhausted — show the error screen
-                    resolveError.value = err.message || 'Failed to strike print';
+                    // All retries exhausted
                     console.error('[STREAM_RESOLVER_ERROR] All retries exhausted', err);
                     autoRetryCount.value = 0;
+                    
+                    // Auto-switch to VidKing for movies and TV shows (not anime)
+                    if (props.mediaType === 'movie' || props.mediaType === 'tv') {
+                        console.log('[StreamFrame] Switching to VidKing after failed retries...');
+                        resolveError.value = 'Switching to VidKing...';
+                        
+                        // Switch to VidKing (server index 1) after a short delay
+                        setTimeout(() => {
+                            emit('switch-to-server', 1);
+                        }, 1500);
+                    } else {
+                        // For anime, just show error
+                        resolveError.value = err.message || 'Failed to strike print';
+                    }
                 }
             } finally {
                 if (!autoRetryTimer) {
