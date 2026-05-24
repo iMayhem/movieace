@@ -8,6 +8,7 @@
                 :alt="title"
                 fetchpriority="high"
                 decoding="async"
+                loading="eager"
             />
             <div v-else class="masthead__art masthead__art--placeholder" aria-hidden="true" />
 
@@ -175,13 +176,28 @@ export default defineComponent({
         // Priority 3: Prefetch stream data on hover
         const { prefetchStream } = usePrefetch();
         const handlePlayHover = () => {
-            console.log('[TitleMasthead] Prefetching stream on hover');
-            prefetchStream(
-                props.id,
-                props.type,
-                props.title,
-                year.value || undefined
-            );
+            // Debounce prefetch to avoid excessive API calls
+            if ('requestIdleCallback' in window) {
+                requestIdleCallback(() => {
+                    console.log('[TitleMasthead] Prefetching stream on hover');
+                    prefetchStream(
+                        props.id,
+                        props.type,
+                        props.title,
+                        year.value || undefined
+                    );
+                }, { timeout: 2000 });
+            } else {
+                setTimeout(() => {
+                    console.log('[TitleMasthead] Prefetching stream on hover');
+                    prefetchStream(
+                        props.id,
+                        props.type,
+                        props.title,
+                        year.value || undefined
+                    );
+                }, 100);
+            }
         };
 
         const backdropUrl = computed(() => {

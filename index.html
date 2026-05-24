@@ -7,6 +7,22 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title>🎬 Moovie</title>
     
+    <!-- Performance Optimizations: Resource Hints -->
+    <link rel="dns-prefetch" href="https://image.tmdb.org/t/p/" />
+    <link rel="dns-prefetch" href="https://wsrv.nl" />
+    <link rel="dns-prefetch" href="https://api.themoviedb.org" />
+    <link rel="preconnect" href="https://image.tmdb.org/t/p/" crossorigin />
+    <link rel="preconnect" href="https://wsrv.nl" crossorigin />
+    
+    <!-- Preload critical fonts (if any) -->
+    <!-- <link rel="preload" href="/fonts/your-font.woff2" as="font" type="font/woff2" crossorigin /> -->
+    
+    <!-- Critical CSS - Inline minimal styles for faster FCP -->
+    <style>
+      /* Critical above-the-fold styles */
+      *,*::before,*::after{box-sizing:border-box}*{margin:0}html{-webkit-text-size-adjust:100%;-moz-text-size-adjust:100%;text-size-adjust:100%;-webkit-tap-highlight-color:transparent}body{min-height:100vh;min-height:100dvh;background:#0b0a08;color:#f5efe4;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}#app{isolation:isolate}.app-stage{position:relative;min-height:100vh;min-height:100dvh;isolation:isolate}
+    </style>
+    
     <!-- Early Anti-Inspect Protection (runs before any other scripts) -->
     <script>
       (function() {

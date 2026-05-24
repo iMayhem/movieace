@@ -28,9 +28,21 @@ import { startReveal, stopReveal } from './composables/useReveal';
 import { installAntiInspect, uninstallAntiInspect } from './composables/useAntiInspect';
 
 onMounted(() => {
-    bindCommandPaletteHotkey();
-    startReveal();
-    installAntiInspect();
+    // Use requestIdleCallback for non-critical initialization
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+            bindCommandPaletteHotkey();
+            startReveal();
+            installAntiInspect();
+        });
+    } else {
+        // Fallback for browsers without requestIdleCallback
+        setTimeout(() => {
+            bindCommandPaletteHotkey();
+            startReveal();
+            installAntiInspect();
+        }, 100);
+    }
 });
 
 onBeforeUnmount(() => {
