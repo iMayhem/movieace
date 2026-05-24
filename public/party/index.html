@@ -2337,30 +2337,69 @@
             }
         }
 
-        async function loadPartyCinestream(nativeUrl) {
+        async function loadPartyCinestream(nativeUrl, retryCount = 0) {
             partyNativeUrl = nativeUrl;
             const nativeStage = document.getElementById('party-native-stage');
             if (nativeStage) nativeStage.style.display = 'block';
             setPartyNativeOverlay('loading');
             destroyPartyArtplayer();
 
+            const maxRetries = 3;
+            const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 5000); // Exponential backoff: 1s, 2s, 4s
+
             try {
                 const fetchUrl = getCinestreamFetchUrl(nativeUrl);
-                const res = await fetch(fetchUrl);
-                if (!res.ok) throw new Error('CineStream resolver is offline');
+                console.log(`[Party CineStream] Attempt ${retryCount + 1}/${maxRetries + 1}: ${fetchUrl}`);
+                
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                
+                const res = await fetch(fetchUrl, { 
+                    signal: controller.signal,
+                    headers: {
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                clearTimeout(timeoutId);
+                
+                if (!res.ok) {
+                    throw new Error(`CineStream API returned ${res.status}`);
+                }
+                
                 const data = await res.json();
+                
+                // Check if we got valid data
+                if (!data || (!data.stream && (!data.options || data.options.length === 0))) {
+                    throw new Error('No streams available');
+                }
+                
                 processPartyStreamData(data);
                 setPartyNativeOverlay('hidden');
                 initPartyArtplayer();
+                console.log('[Party CineStream] Successfully loaded stream');
             } catch (err) {
-                const msgEl = document.getElementById('party-native-error-msg');
-                if (msgEl) msgEl.textContent = err.message || 'Failed to load stream';
-                setPartyNativeOverlay('error');
+                console.error(`[Party CineStream] Error on attempt ${retryCount + 1}:`, err);
+                
+                // Auto-retry if we haven't exceeded max retries
+                if (retryCount < maxRetries) {
+                    console.log(`[Party CineStream] Retrying in ${retryDelay}ms...`);
+                    const msgEl = document.getElementById('party-native-error-msg');
+                    if (msgEl) msgEl.textContent = `Loading... (attempt ${retryCount + 2}/${maxRetries + 1})`;
+                    
+                    setTimeout(() => {
+                        loadPartyCinestream(nativeUrl, retryCount + 1);
+                    }, retryDelay);
+                } else {
+                    // Max retries exceeded, show error
+                    const msgEl = document.getElementById('party-native-error-msg');
+                    if (msgEl) msgEl.textContent = err.message || 'Failed to load stream after multiple attempts';
+                    setPartyNativeOverlay('error');
+                }
             }
         }
 
         function retryPartyCinestream() {
-            if (partyNativeUrl) loadPartyCinestream(partyNativeUrl);
+            if (partyNativeUrl) loadPartyCinestream(partyNativeUrl, 0);
         }
 
         function showEmbedPlayer(embedUrl) {
