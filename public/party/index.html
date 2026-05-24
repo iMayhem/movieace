@@ -1151,6 +1151,19 @@
                 font-size: 14px;
             }
 
+            /* Hide "Watching as" badge on mobile */
+            .watching-as-badge {
+                display: none !important;
+            }
+
+            /* Rename "Lobby Chat" to "Chat" on mobile */
+            .chat-panel-title::before {
+                content: 'Chat';
+            }
+            .chat-panel-title {
+                font-size: 0;
+            }
+
             /* CRITICAL: Make room view fill screen for split layout */
             body.room-view-active {
                 height: 100vh;
@@ -1860,7 +1873,7 @@
                     <div class="sidebar-header">
                         <div class="chat-title-group">
                             <div class="chat-status-dot"></div>
-                            <span>Lobby Chat</span>
+                            <span class="chat-panel-title">Lobby Chat</span>
                         </div>
                         <div id="users-badge-container" class="chat-user-status">
                             Joined: <strong id="chat-my-name">Guest</strong> (<span id="chat-online-count">1</span> online)
@@ -1991,7 +2004,7 @@
             const container = document.getElementById('header-user');
             container.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 1rem;">
-                    <span style="font-size: 0.875rem; color: var(--bone-200);">👤 Watching as <strong>${currentUserName}</strong></span>
+                    <span class="watching-as-badge" style="font-size: 0.875rem; color: var(--bone-200);">👤 Watching as <strong>${currentUserName}</strong></span>
                     <button class="btn btn-secondary" style="padding: 0.4rem 0.85rem; font-size:0.75rem;" onclick="changeNickname()">Rename</button>
                 </div>
             `;
