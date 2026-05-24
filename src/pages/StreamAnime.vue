@@ -706,12 +706,25 @@ export default defineComponent({
     }
 
     &__player-container {
-        aspect-ratio: 16 / 9;
+        min-width: 0;
+        flex-shrink: 0;
         background: #000;
         border-radius: var(--r-md);
         overflow: hidden;
         border: 1px solid var(--rule);
         box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+
+        @media (max-width: 1023px) {
+            width: 100%;
+
+            :deep(.stream-frame__stage) {
+                padding: 0;
+            }
+
+            :deep(.stream-frame__player) {
+                border-radius: var(--r-md);
+            }
+        }
     }
 
     .player-stage-container {
