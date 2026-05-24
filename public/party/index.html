@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="theme-color" content="#04060a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>moovie · Watch Together Lobby</title>
     <!-- Premium Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1698,6 +1701,213 @@
             .server-dropdown-menu {
                 -webkit-overflow-scrolling: touch;
                 scroll-behavior: smooth;
+            }
+
+            /* CRITICAL FIX: Chat input overlap with phone navigation buttons */
+            .chat-input-container {
+                padding: 0.5rem 0.5rem calc(env(safe-area-inset-bottom, 0px) + 0.5rem) 0.75rem !important;
+                margin-bottom: env(safe-area-inset-bottom, 0px);
+                background: var(--surface);
+                border-top: 1px solid var(--rule);
+            }
+
+            /* Ensure sidebar accounts for safe areas */
+            .sidebar {
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+            }
+
+            .sidebar-content {
+                padding-bottom: 0 !important;
+            }
+
+            /* CRITICAL FIX: Video player fullscreen button visibility */
+            #party-native-player,
+            .player-iframe {
+                border-radius: var(--r-sm);
+                overflow: visible !important;
+            }
+
+            /* Ensure Artplayer controls are fully visible */
+            .art-video-player {
+                border-radius: var(--r-sm);
+            }
+
+            .art-bottom {
+                padding-bottom: 8px !important;
+            }
+
+            .art-controls {
+                padding: 0 8px 8px 8px !important;
+            }
+
+            /* Make fullscreen button more accessible */
+            .art-control-fullscreen,
+            .art-control-fullscreenWeb {
+                margin-right: 4px !important;
+            }
+        }
+
+        /* Prevent zoom on input focus (iOS) */
+        @media (max-width: 768px) {
+            input,
+            textarea,
+            select {
+                font-size: 16px !important;
+            }
+        }
+
+        /* Additional safe area support for devices with notches/home indicators */
+        @supports (padding: env(safe-area-inset-bottom)) {
+            @media (max-width: 768px) {
+                body.room-view-active main {
+                    height: calc(100vh - 65px - env(safe-area-inset-bottom, 0px));
+                    padding-bottom: env(safe-area-inset-bottom, 0px);
+                }
+
+                .sidebar {
+                    padding-bottom: env(safe-area-inset-bottom, 0px);
+                }
+
+                .chat-input-container {
+                    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem) !important;
+                }
+            }
+        }
+
+        /* Tablet-specific optimizations (481px - 768px) */
+        @media (min-width: 481px) and (max-width: 768px) {
+            /* Tablets get slightly larger text */
+            body {
+                font-size: 15px;
+            }
+
+            .workspace-title {
+                font-size: 1.1rem;
+            }
+
+            .chat-bubble {
+                font-size: 0.9rem;
+            }
+
+            /* Tablets can show 2-column room grid */
+            .rooms-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            /* Better spacing for tablets */
+            .player-container {
+                gap: 0.75rem;
+            }
+
+            .sidebar-content {
+                padding: 1rem;
+            }
+        }
+
+        /* Large tablets (769px - 1024px) */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            /* Tablets in this range can use desktop-like layout but optimized */
+            .room-workspace {
+                grid-template-columns: 1fr 380px !important;
+            }
+
+            /* Ensure chat input is accessible */
+            .chat-input-container {
+                padding: 0.5rem 0.5rem calc(env(safe-area-inset-bottom, 0px) + 0.5rem) 0.75rem;
+            }
+        }
+
+        /* Landscape tablet optimizations (768px - 1024px landscape) */
+        @media (min-width: 769px) and (max-width: 1024px) and (orientation: landscape) {
+            .room-workspace {
+                grid-template-columns: 1fr 400px !important;
+            }
+
+            .player-stage {
+                max-height: calc(100vh - 150px);
+            }
+        }
+
+        /* Small tablets in portrait (481px - 768px portrait) */
+        @media (min-width: 481px) and (max-width: 768px) and (orientation: portrait) {
+            .room-workspace {
+                flex-direction: column !important;
+            }
+
+            .player-container {
+                flex: 0 0 auto;
+                max-height: 50vh;
+            }
+
+            .sidebar {
+                flex: 1 1 auto;
+                min-height: 300px;
+            }
+        }
+
+        /* Small tablets in landscape (481px - 768px landscape) */
+        @media (min-width: 481px) and (max-width: 768px) and (orientation: landscape) {
+            .room-workspace {
+                flex-direction: row !important;
+            }
+
+            .player-container {
+                flex: 0 0 65%;
+            }
+
+            .sidebar {
+                flex: 0 0 35%;
+                min-width: 280px;
+            }
+
+            .player-stage {
+                max-height: calc(100vh - 100px);
+            }
+        }
+
+        /* Very small phones (max 375px) */
+        @media (max-width: 375px) {
+            .workspace-header {
+                padding: 0.4rem;
+            }
+
+            .workspace-title {
+                font-size: 0.85rem;
+            }
+
+            .leave-lobby-btn,
+            .server-dropdown-trigger,
+            .lights-out-btn {
+                font-size: 0.7rem;
+                padding: 0.35rem 0.6rem;
+            }
+
+            .chat-bubble {
+                font-size: 0.75rem;
+                max-width: 90%;
+            }
+
+            .chat-input-container {
+                padding: 0.4rem 0.4rem calc(env(safe-area-inset-bottom, 0px) + 0.4rem) 0.6rem !important;
+            }
+
+            .chat-text-input {
+                font-size: 0.85rem;
+            }
+        }
+
+        /* Extra safe area handling for iPhone X and newer */
+        @media (max-width: 768px) {
+            @supports (padding-bottom: env(safe-area-inset-bottom)) {
+                .chat-input-container {
+                    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px)) !important;
+                }
+
+                body.room-view-active {
+                    padding-bottom: env(safe-area-inset-bottom, 0px);
+                }
+            }
+        }
             }
         }
 
