@@ -1036,6 +1036,11 @@ export default defineComponent({
         height: 16px;
     }
 }
+
+// Hide scroll car on all watch/stream pages
+:global(.scroll-car-container) {
+    display: none !important;
+}
 </style>
 
 
