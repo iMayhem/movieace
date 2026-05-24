@@ -685,23 +685,34 @@ export default defineComponent({
     }
 
     &__main {
-        max-width: 1440px;
-        width: 100%;
-        margin: 0 auto;
-        padding: var(--s-6);
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: var(--s-6);
+        display: grid;
+        gap: 0;
     }
 
     &__theater {
         display: grid;
-        grid-template-columns: 1fr;
-        gap: var(--s-4);
+        gap: var(--s-5);
+        max-width: 1440px;
+        width: 100%;
+        margin: 0 auto;
+        box-sizing: border-box;
+
+        @media (max-width: 1023px) {
+            display: flex;
+            flex-direction: column;
+            gap: var(--s-4);
+            padding: var(--s-3);
+            height: auto;
+            min-height: 0;
+        }
 
         @media (min-width: 1024px) {
-            grid-template-columns: 1fr 280px;
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            height: 100dvh;
+            padding: 72px var(--s-5) var(--s-4) var(--s-5);
+            grid-template-columns: 1fr 380px;
+            align-items: stretch;
         }
     }
 
@@ -725,6 +736,12 @@ export default defineComponent({
                 border-radius: var(--r-md);
             }
         }
+
+        @media (min-width: 1024px) {
+            :deep(.stream-frame__stage) {
+                padding: 0;
+            }
+        }
     }
 
     .player-stage-container {
@@ -740,9 +757,18 @@ export default defineComponent({
     }
 
     &__aside {
-        display: flex;
-        flex-direction: column;
-        gap: var(--s-4);
+        min-width: 0;
+        flex-shrink: 0;
+
+        @media (max-width: 1023px) {
+            padding: 0;
+            width: 100%;
+        }
+
+        @media (min-width: 1024px) {
+            position: relative;
+            align-self: stretch;
+        }
     }
 
     &__rack {
