@@ -620,21 +620,12 @@
             <div class="services-grid" id="backend-services"></div>
         </section>
 
-        <!-- Server Metrics -->
-        <section class="category">
-            <div class="category-header">
-                <span class="category-icon">🖥️</span>
-                <h2 class="category-title">Oracle Cloud Server</h2>
-            </div>
-            <div id="server-metrics-container"></div>
-        </section>
-
         <!-- Last Updated -->
         <div class="last-updated">
             Last updated: <strong id="last-updated-time">-</strong>
             <br>
             <span style="font-size: 0.75rem; margin-top: 0.5rem; display: inline-block;">
-                Auto-refreshes every 60 seconds
+                Auto-refreshes every 5 minutes
             </span>
         </div>
     </div>
@@ -646,5 +637,73 @@
 
     <script src="status-checker.js"></script>
     <script src="server-metrics.js"></script>
+    <!-- Anti-Inspect Protection -->
+    <script>
+        // Disable right-click
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U, Ctrl+Shift+C
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I (Inspect)
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J (Console)
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U (View Source)
+            if (e.ctrlKey && e.keyCode === 85) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C (Inspect Element)
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+S (Save)
+            if (e.ctrlKey && e.keyCode === 83) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // Detect DevTools
+        const devtools = { open: false };
+        const threshold = 160;
+
+        setInterval(function() {
+            if (window.outerWidth - window.innerWidth > threshold || 
+                window.outerHeight - window.innerHeight > threshold) {
+                if (!devtools.open) {
+                    devtools.open = true;
+                    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#000;color:#fff;font-family:monospace;font-size:24px;">Developer tools detected. Access denied.</div>';
+                }
+            }
+        }, 500);
+
+        // Disable text selection
+        document.addEventListener('selectstart', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // Disable copy
+        document.addEventListener('copy', function(e) {
+            e.preventDefault();
+            return false;
+        });
+    </script>
 </body>
 </html>

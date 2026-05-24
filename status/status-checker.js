@@ -135,19 +135,6 @@ let statusData = {
 async function checkService(service) {
     const startTime = performance.now();
     
-    // Return fake operational status with random response times
-    const fakeResponseTime = Math.floor(Math.random() * 500) + 100; // 100-600ms
-    
-    // Simulate a small delay
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    return {
-        status: 'operational',
-        responseTime: fakeResponseTime,
-        message: 'Operational'
-    };
-    
-    /* Original checking code commented out
     try {
         // For embed providers, we just check if the domain is reachable
         // For APIs, we make actual requests
@@ -325,7 +312,6 @@ async function checkService(service) {
             message: error.message || 'Connection failed'
         };
     }
-    */
 }
 
 // Check via iframe (fallback for embed providers)
@@ -374,6 +360,9 @@ function renderServiceCard(service, result) {
     const statusText = result.status === 'operational' ? 'Operational' : 
                       result.status === 'degraded' ? 'Degraded' : 'Down';
     
+    // Hide URL for Supabase to protect credentials
+    const displayUrl = service.name === 'Supabase' ? '••••••••••••••••••••' : service.url;
+    
     return `
         <div class="service-card">
             <div class="service-info">
@@ -381,7 +370,7 @@ function renderServiceCard(service, result) {
                     ${service.name}
                     ${service.note ? `<span style="font-size: 0.7rem; color: var(--bone-500); font-weight: 400;">(${service.note})</span>` : ''}
                 </div>
-                <div class="service-url">${service.url}</div>
+                <div class="service-url">${displayUrl}</div>
             </div>
             <div class="service-meta">
                 <div class="service-status ${statusClass}">
@@ -400,11 +389,14 @@ function renderServiceCard(service, result) {
 
 // Render checking state
 function renderCheckingCard(service) {
+    // Hide URL for Supabase to protect credentials
+    const displayUrl = service.name === 'Supabase' ? '••••••••••••••••••••' : service.url;
+    
     return `
         <div class="service-card">
             <div class="service-info">
                 <div class="service-name">${service.name}</div>
-                <div class="service-url">${service.url}</div>
+                <div class="service-url">${displayUrl}</div>
             </div>
             <div class="service-meta">
                 <div class="service-status checking">
