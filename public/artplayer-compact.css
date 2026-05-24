@@ -5,12 +5,12 @@
     --art-control-icon-scale: 1;
     --art-bottom-gap: 0px;
     --art-bottom-offset: 0px;
-    --art-progress-height: 4px;
+    --art-progress-height: 8px;
     --art-progress-top-gap: 0px;
     --art-padding: 10px;
     --art-mini-progress-height: 2px;
     /* Total bottom chrome = seek bar + control row (matches main site) */
-    --art-bottom-height: calc(var(--art-control-height) + var(--art-progress-height));
+    --art-bottom-height: calc(var(--art-control-height) + var(--art-progress-height) + 4px);
 }
 
 .art-video-player .art-bottom {
@@ -22,38 +22,52 @@
     height: var(--art-bottom-height) !important;
     padding: 0 !important;
     margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
 }
 
 .art-video-player .art-controls {
-    position: absolute !important;
-    bottom: 0 !important;
+    position: relative !important;
+    bottom: auto !important;
     left: 0 !important;
     right: 0 !important;
     height: var(--art-control-height) !important;
     min-height: var(--art-control-height) !important;
     max-height: var(--art-control-height) !important;
     padding: 0 12px !important;
-    background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.9) 100%) !important;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.95) 100%) !important;
+    z-index: 5 !important;
+    order: 2 !important;
 }
 
 .art-video-player .art-control-progress {
-    position: absolute !important;
-    bottom: var(--art-control-height) !important;
+    position: relative !important;
+    bottom: auto !important;
     left: 0 !important;
     right: 0 !important;
     height: var(--art-progress-height) !important;
-    padding: 0 !important;
+    padding: 4px 0 !important;
     margin: 0 !important;
     z-index: 10 !important;
+    order: 1 !important;
+    background: rgba(0, 0, 0, 0.7) !important;
 }
 
 .art-video-player .art-control-progress:hover {
-    height: 6px !important;
-    bottom: calc(var(--art-control-height) - 1px) !important;
+    height: 12px !important;
+    padding: 6px 0 !important;
 }
 
 .art-video-player .art-progress-indicator {
     display: block !important;
+    width: 14px !important;
+    height: 14px !important;
+    margin-top: -5px !important;
+}
+
+.art-video-player .art-progress-indicator:hover {
+    width: 16px !important;
+    height: 16px !important;
 }
 
 .art-video-player .art-controls-left,
@@ -75,7 +89,7 @@
 }
 
 .art-video-player .art-subtitle {
-    bottom: calc(var(--art-control-height) + var(--art-progress-height) + 20px) !important;
+    bottom: calc(var(--art-bottom-height) + 20px) !important;
 }
 
 /* Watch Together: player shell fills stage; controls pin to bottom like main site */
@@ -107,15 +121,15 @@ body.room-view-active #party-native-player .art-video-player .art-bottom {
 }
 
 body.room-view-active #party-native-player .art-video-player .art-controls {
-    position: absolute !important;
-    bottom: 0 !important;
+    position: relative !important;
+    bottom: auto !important;
     left: 0 !important;
     right: 0 !important;
 }
 
 body.room-view-active #party-native-player .art-video-player .art-control-progress {
-    position: absolute !important;
-    bottom: var(--art-control-height) !important;
+    position: relative !important;
+    bottom: auto !important;
     left: 0 !important;
     right: 0 !important;
 }

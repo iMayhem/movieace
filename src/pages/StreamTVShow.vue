@@ -54,6 +54,57 @@
                         :episode="currentEpisode"
                         @switch-to-server="changeServer"
                     />
+                    
+                    <!-- Keyboard Shortcuts Info -->
+                    <div class="keyboard-shortcuts-info">
+                        <button 
+                            type="button" 
+                            class="shortcuts-toggle"
+                            @click="showShortcuts = !showShortcuts"
+                            title="Keyboard Shortcuts"
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="4" width="20" height="16" rx="2" />
+                                <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10" />
+                            </svg>
+                        </button>
+                        
+                        <transition name="shortcuts-fade">
+                            <div v-if="showShortcuts" class="shortcuts-panel">
+                                <h3 class="shortcuts-title">Keyboard Shortcuts</h3>
+                                <div class="shortcuts-list">
+                                    <div class="shortcut-item">
+                                        <kbd>Space</kbd>
+                                        <span>Play / Pause</span>
+                                    </div>
+                                    <div class="shortcut-item">
+                                        <kbd>←</kbd>
+                                        <span>Seek backward 10s</span>
+                                    </div>
+                                    <div class="shortcut-item">
+                                        <kbd>→</kbd>
+                                        <span>Seek forward 10s</span>
+                                    </div>
+                                    <div class="shortcut-item">
+                                        <kbd>Ctrl</kbd> + <kbd>←</kbd>
+                                        <span>Previous episode</span>
+                                    </div>
+                                    <div class="shortcut-item">
+                                        <kbd>Ctrl</kbd> + <kbd>→</kbd>
+                                        <span>Next episode</span>
+                                    </div>
+                                    <div class="shortcut-item">
+                                        <kbd>F</kbd>
+                                        <span>Fullscreen</span>
+                                    </div>
+                                    <div class="shortcut-item">
+                                        <kbd>M</kbd>
+                                        <span>Mute / Unmute</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </transition>
+                    </div>
                 </div>
 
                 <div class="watch-stage__aside">
@@ -193,6 +244,7 @@ export default defineComponent({
         const currentEpisode = ref<number>(parseInt(route.params.episode as string) || 1);
         const currentEpisodeDetails = ref<Episode | null>(null);
         const isLoadingEpisodes = ref(false);
+        const showShortcuts = ref(false);
 
         const availableServers = computed(() => getServers('tv'));
         const availableSeasons = computed(() =>
@@ -486,6 +538,7 @@ export default defineComponent({
             runtimeLabel,
             nextSeasonNumber,
             nextSeasonEpisodes,
+            showShortcuts,
             changeServer,
             onSeasonChange,
             changeEpisode,
@@ -979,3 +1032,104 @@ export default defineComponent({
     }
 }
 </style>
+
+
+// Keyboard Shortcuts Info Panel
+.keyboard-shortcuts-info {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 50;
+}
+
+.shortcuts-toggle {
+    background: rgba(10, 10, 12, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--r-sm);
+    padding: 0.5rem;
+    cursor: pointer;
+    color: var(--bone-200);
+    transition: all var(--dur-fast) var(--ease-out);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    &:hover {
+        background: rgba(10, 10, 12, 0.95);
+        border-color: rgba(255, 255, 255, 0.2);
+        color: var(--bone-50);
+        transform: translateY(-1px);
+    }
+}
+
+.shortcuts-panel {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    background: rgba(10, 10, 12, 0.96);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: var(--r-md);
+    padding: 1rem;
+    min-width: 280px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.shortcuts-title {
+    font-family: var(--font-display);
+    font-size: var(--fs-base);
+    font-weight: 600;
+    color: var(--bone-50);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.shortcuts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.shortcut-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: var(--fs-sm);
+    color: var(--bone-300);
+
+    kbd {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 4px;
+        padding: 0.2rem 0.5rem;
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--bone-50);
+        min-width: 28px;
+        text-align: center;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    span {
+        flex: 1;
+    }
+}
+
+.shortcuts-fade-enter-active,
+.shortcuts-fade-leave-active {
+    transition: opacity 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+}
+
+.shortcuts-fade-enter-from,
+.shortcuts-fade-leave-to {
+    opacity: 0;
+    transform: translateY(-8px);
+}
