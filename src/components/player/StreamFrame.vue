@@ -428,7 +428,9 @@ export default defineComponent({
             const activeSub = subtitleList.find((s) => s.default);
 
             const isM3U8 = videoUrl.value.toLowerCase().includes('m3u8') || videoUrl.value.toLowerCase().includes('hls') || videoUrl.value.toLowerCase().includes('type=hls');
-            artplayerInstance = new Artplayer({
+            
+            // Build Artplayer config
+            const artplayerConfig: any = {
                 container: artPlayerRef.value as HTMLDivElement,
                 url: videoUrl.value,
                 type: isM3U8 ? 'm3u8' : 'mp4',
@@ -459,15 +461,6 @@ export default defineComponent({
                         }
                     }
                 },
-                subtitle: activeSub ? {
-                    url: activeSub.url,
-                    type: 'vtt',
-                    style: {
-                        color: '#ffffff',
-                        fontSize: '24px',
-                        textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)'
-                    }
-                } : undefined,
                 settings: [
                     {
                         html: 'Subtitles',
@@ -498,7 +491,22 @@ export default defineComponent({
                         }
                     }
                 ]
-            });
+            };
+
+            // Only add subtitle config if we have a valid subtitle
+            if (activeSub && activeSub.url) {
+                artplayerConfig.subtitle = {
+                    url: activeSub.url,
+                    type: 'vtt',
+                    style: {
+                        color: '#ffffff',
+                        fontSize: '24px',
+                        textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)'
+                    }
+                };
+            }
+
+            artplayerInstance = new Artplayer(artplayerConfig);
 
             // Auto-fallback: Monitor buffering and playing events
             artplayerInstance.on('video:waiting', () => {
