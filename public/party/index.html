@@ -2228,7 +2228,7 @@
             const activeSub = subtitleList.find((s) => s.default);
             const isM3U8 = partyVideoUrl.toLowerCase().includes('m3u8') || partyVideoUrl.toLowerCase().includes('hls');
 
-            // Build Artplayer config
+            // Build Artplayer config - EXACT COPY from main StreamFrame
             const artplayerConfig = {
                 container,
                 url: partyVideoUrl,
@@ -2242,13 +2242,13 @@
                 fullscreen: true,
                 fullscreenWeb: true,
                 miniProgressBar: false,
-                theme: '#ff5a1f',
+                theme: '#E50914', // Premium Netflix Red theme (same as main player)
                 quality: finalQualityList.length ? finalQualityList : undefined,
                 customType: {
                     m3u8(video, url, art) {
                         if (Hls.isSupported()) {
                             if (art.hls) art.hls.destroy();
-                            const hls = new Hls({ maxMaxBufferLength: 30, enableWorker: true });
+                            const hls = new Hls();
                             hls.loadSource(url);
                             hls.attachMedia(video);
                             art.hls = hls;
@@ -2256,17 +2256,21 @@
                         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                             video.src = url;
                         } else {
-                            art.notice.show = 'Unsupported video format';
+                            art.notice.show = 'Unsupported media type';
                         }
                     }
                 },
-                settings: subtitleList.length ? [
+                settings: [
                     {
                         html: 'Subtitles',
-                        width: 220,
+                        width: 250,
                         tooltip: activeSub?.html || 'Off',
                         selector: [
-                            { html: 'Off', default: !activeSub, url: '' },
+                            {
+                                html: 'Off',
+                                default: !activeSub,
+                                url: ''
+                            },
                             ...subtitleList.map((sub) => ({
                                 html: sub.html,
                                 default: sub.default,
@@ -2275,26 +2279,29 @@
                         ],
                         onSelect(item) {
                             if (!partyArtplayer) return item.html;
-                            if (item.url) {
-                                partyArtplayer.subtitle.url = item.url;
-                                partyArtplayer.subtitle.show = true;
-                            } else {
-                                partyArtplayer.subtitle.show = false;
+                        onSelect: (item) => {
+                            if (partyArtplayer) {
+                                if (item.url) {
+                                    partyArtplayer.subtitle.url = item.url;
+                                    partyArtplayer.subtitle.show = true;
+                                } else {
+                                    partyArtplayer.subtitle.show = false;
+                                }
                             }
                             return item.html;
                         }
                     }
-                ] : []
+                ]
             };
 
-            // Only add subtitle config if we have a valid subtitle
+            // Only add subtitle config if we have a valid subtitle (EXACT COPY from main player)
             if (activeSub && activeSub.url) {
                 artplayerConfig.subtitle = {
                     url: activeSub.url,
                     type: 'vtt',
                     style: {
                         color: '#ffffff',
-                        fontSize: '22px',
+                        fontSize: '24px',
                         textShadow: '0 2px 4px rgba(0, 0, 0, 0.8)'
                     }
                 };
@@ -2317,20 +2324,6 @@
             });
 
             partyArtplayer.on('video:error', () => tryNextPartyStream());
-
-            applyPartyArtplayerCompactUi(partyArtplayer);
-        }
-
-        function applyPartyArtplayerCompactUi(art) {
-            if (!art || typeof art.cssVar !== 'function') return;
-            art.cssVar('--art-control-height', '34px');
-            art.cssVar('--art-control-icon-size', '20px');
-            art.cssVar('--art-control-icon-scale', '0.92');
-            art.cssVar('--art-bottom-gap', '0px');
-            art.cssVar('--art-progress-height', '3px');
-            art.cssVar('--art-bottom-offset', '0px');
-            art.cssVar('--art-padding', '8px');
-            art.cssVar('--art-bottom-height', '37px');
         }
 
         function tryNextPartyStream() {
