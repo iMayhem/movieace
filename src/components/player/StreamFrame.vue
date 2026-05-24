@@ -89,7 +89,8 @@ export default defineComponent({
         season: { type: Number, default: 0 },
         episode: { type: Number, default: 0 }
     },
-    setup(props) {
+    emits: ['switch-to-server'],
+    setup(props, { emit }) {
         const rootRef = ref<HTMLElement | null>(null);
         const frameEl = ref<HTMLIFrameElement | null>(null);
         const artPlayerRef = ref<HTMLElement | null>(null);
@@ -269,7 +270,19 @@ export default defineComponent({
 
         // Helper function to process stream data (used by both cached and fresh data)
         const processStreamData = (resolveData: any) => {
+            // Check if CineStream returned no videos
             if (!resolveData.stream && (!resolveData.options || resolveData.options.length === 0)) {
+                // Check if this is a CineStream request
+                if (props.embedUrl.includes('cinestream') || props.embedUrl.includes('NATIVE:')) {
+                    console.log('[StreamFrame] CineStream returned no videos, switching to VidKing...');
+                    resolveError.value = 'No videos found. Switching to VidKing...';
+                    
+                    // Auto-switch to VidKing (server index 1) after a short delay
+                    setTimeout(() => {
+                        emit('switch-to-server', 1); // VidKing is at index 1
+                    }, 1500);
+                    return;
+                }
                 throw new Error('Streaming resource is currently offline for this item');
             }
 

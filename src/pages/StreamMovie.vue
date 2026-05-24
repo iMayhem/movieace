@@ -45,6 +45,7 @@
                         :poster-path="movie?.poster_path || ''"
                         :media-id="movieId"
                         media-type="movie"
+                        @switch-to-server="changeServer"
                     />
                 </div>
 

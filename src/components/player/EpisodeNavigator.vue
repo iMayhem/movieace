@@ -184,10 +184,11 @@ export default defineComponent({
 
         const onKey = (e: KeyboardEvent) => {
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
-            if (e.key === 'ArrowLeft' && canGoPrevious.value) {
+            // Only change episode with Ctrl+Arrow, let plain arrows seek in video
+            if (e.key === 'ArrowLeft' && e.ctrlKey && canGoPrevious.value) {
                 e.preventDefault();
                 emit('previous');
-            } else if (e.key === 'ArrowRight' && canGoNext.value) {
+            } else if (e.key === 'ArrowRight' && e.ctrlKey && canGoNext.value) {
                 e.preventDefault();
                 emit('next');
             }

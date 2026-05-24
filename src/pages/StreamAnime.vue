@@ -52,6 +52,7 @@
                         :media-id="animeId"
                         media-type="anime"
                         :episode="currentEpisode"
+                        @switch-to-server="activeServerIndex = $event"
                     />
                 </div>
 
@@ -478,11 +479,14 @@ export default defineComponent({
         // Keyboard navigation for step increment
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-            if (e.key === 'ArrowLeft') {
+            // Only change episode with Ctrl+Arrow, let plain arrows seek in video
+            if (e.key === 'ArrowLeft' && e.ctrlKey) {
+                e.preventDefault();
                 if (currentEpisode.value > 1) {
                     goToEpisode(currentEpisode.value - 1);
                 }
-            } else if (e.key === 'ArrowRight') {
+            } else if (e.key === 'ArrowRight' && e.ctrlKey) {
+                e.preventDefault();
                 if (currentEpisode.value < totalEpisodes.value) {
                     goToEpisode(currentEpisode.value + 1);
                 }

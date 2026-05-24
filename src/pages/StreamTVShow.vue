@@ -52,6 +52,7 @@
                         media-type="tv"
                         :season="currentSeason"
                         :episode="currentEpisode"
+                        @switch-to-server="changeServer"
                     />
                 </div>
 
