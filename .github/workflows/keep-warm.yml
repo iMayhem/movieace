@@ -1,0 +1,22 @@
+name: Keep CineStream API Warm
+
+on:
+  schedule:
+    # Run every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  warmup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping warmup endpoint
+        run: |
+          echo "Pinging CineStream warmup endpoint..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" "https://movieace.pages.dev/api/cinestream?warmup=true")
+          echo "Response code: $response"
+          if [ "$response" = "200" ]; then
+            echo "✅ Function is warm"
+          else
+            echo "⚠️ Unexpected response code: $response"
+          fi
