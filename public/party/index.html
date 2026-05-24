@@ -2344,25 +2344,30 @@
             setPartyNativeOverlay('loading');
             destroyPartyArtplayer();
 
-            const maxRetries = 3;
-            const retryDelay = Math.min(1000 * Math.pow(2, retryCount), 5000); // Exponential backoff: 1s, 2s, 4s
+            const maxRetries = 5; // Increased from 3 to 5
+            const retryDelay = Math.min(2000 * Math.pow(1.5, retryCount), 10000); // Longer delays: 2s, 3s, 4.5s, 6.75s, 10s
 
             try {
                 const fetchUrl = getCinestreamFetchUrl(nativeUrl);
                 console.log(`[Party CineStream] Attempt ${retryCount + 1}/${maxRetries + 1}: ${fetchUrl}`);
                 
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 20000); // Increased to 20 second timeout
                 
                 const res = await fetch(fetchUrl, { 
                     signal: controller.signal,
                     headers: {
-                        'Cache-Control': 'no-cache'
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
                     }
                 });
                 clearTimeout(timeoutId);
                 
                 if (!res.ok) {
+                    // For 404, it's likely a cold start - definitely retry
+                    if (res.status === 404) {
+                        throw new Error(`CineStream API cold start (404) - retrying...`);
+                    }
                     throw new Error(`CineStream API returned ${res.status}`);
                 }
                 
@@ -2382,9 +2387,17 @@
                 
                 // Auto-retry if we haven't exceeded max retries
                 if (retryCount < maxRetries) {
-                    console.log(`[Party CineStream] Retrying in ${retryDelay}ms...`);
+                    const nextAttempt = retryCount + 2;
+                    const delaySeconds = Math.round(retryDelay / 1000);
+                    console.log(`[Party CineStream] Retrying in ${delaySeconds}s... (attempt ${nextAttempt}/${maxRetries + 1})`);
+                    
                     const msgEl = document.getElementById('party-native-error-msg');
-                    if (msgEl) msgEl.textContent = `Loading... (attempt ${retryCount + 2}/${maxRetries + 1})`;
+                    if (msgEl) {
+                        msgEl.textContent = `Loading stream... (attempt ${nextAttempt}/${maxRetries + 1})`;
+                    }
+                    
+                    // Keep showing loading state during retry
+                    setPartyNativeOverlay('loading');
                     
                     setTimeout(() => {
                         loadPartyCinestream(nativeUrl, retryCount + 1);
@@ -2392,7 +2405,9 @@
                 } else {
                     // Max retries exceeded, show error
                     const msgEl = document.getElementById('party-native-error-msg');
-                    if (msgEl) msgEl.textContent = err.message || 'Failed to load stream after multiple attempts';
+                    if (msgEl) {
+                        msgEl.textContent = err.message || 'Failed to load stream after multiple attempts. Please try again.';
+                    }
                     setPartyNativeOverlay('error');
                 }
             }
