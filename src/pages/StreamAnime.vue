@@ -581,11 +581,24 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .watch-stage {
-    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
+    overflow-y: scroll;
+    scroll-snap-type: y proximity;
+    scroll-behavior: smooth;
     background-color: var(--ink-950);
     color: var(--bone-50);
-    display: flex;
-    flex-direction: column;
+
+    // Hide scrollbar visually but keep it functional
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+
+    @media (max-width: 1023px) {
+        height: auto;
+        min-height: 100dvh;
+        scroll-snap-type: none;
+        overflow-x: hidden;
+    }
 
     &__chrome {
         background: rgba(10, 10, 12, 0.85);
@@ -772,19 +785,64 @@ export default defineComponent({
     }
 
     &__rack {
-        background: var(--ink-800);
-        border: 1px solid var(--rule);
-        border-radius: var(--r-lg);
+        max-width: 1280px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 0 var(--s-4);
+        box-sizing: border-box;
+
+        @media (max-width: 1023px) {
+            height: auto;
+            min-height: 0;
+            scroll-snap-align: none;
+            align-content: start;
+            padding: var(--s-5) var(--s-3) var(--s-4);
+        }
+
+        @media (min-width: 1024px) {
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            height: 100dvh;
+            align-content: center;
+            padding: 0 var(--s-5);
+        }
+
+        @media (min-width: 768px) {
+            padding: 0 var(--s-5);
+        }
     }
 
     &__feature {
         display: grid;
-        grid-template-columns: 1fr;
         gap: var(--s-6);
-        background: rgba(255, 255, 255, 0.01);
-        border: 1px solid var(--rule);
-        border-radius: var(--r-md);
-        padding: var(--s-6);
+        max-width: 1280px;
+        margin: 0 auto;
+        width: 100%;
+        box-sizing: border-box;
+        padding: var(--s-6) var(--s-4);
+
+        @media (max-width: 1023px) {
+            height: auto;
+            min-height: 0;
+            scroll-snap-align: none;
+            align-content: start;
+            padding: var(--s-5) var(--s-3) var(--s-4);
+        }
+
+        @media (min-width: 1024px) {
+            scroll-snap-align: start;
+            scroll-snap-stop: always;
+            height: 100dvh;
+            align-content: center;
+            padding: 0 var(--s-5);
+            grid-template-columns: 280px 1fr;
+            align-items: center;
+        }
+
+        @media (min-width: 768px) and (max-width: 1023px) {
+            grid-template-columns: 200px 1fr;
+            align-items: start;
+        }
 
         @media (min-width: 768px) {
             grid-template-columns: 180px 1fr;
@@ -792,15 +850,19 @@ export default defineComponent({
     }
 
     &__poster {
+        position: relative;
         aspect-ratio: 2 / 3;
-        border-radius: var(--r-sm);
+        max-width: 280px;
+        border-radius: var(--r-lg);
         overflow: hidden;
-        border: 1px solid var(--rule);
+        box-shadow: var(--shadow-lg);
+        margin: 0 auto;
 
         img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
     }
 
@@ -844,13 +906,23 @@ export default defineComponent({
         color: var(--bone-300);
         line-height: 1.6;
         font-size: var(--fs-sm);
-        max-width: 72ch;
+        max-width: 60ch;
     }
 
     &__disclaimer {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 var(--s-4);
         text-align: center;
-        margin-top: var(--s-4);
         color: var(--bone-500);
+
+        @media (max-width: 1023px) {
+            padding: 0 var(--s-3) calc(var(--s-8) + env(safe-area-inset-bottom, 0px));
+        }
+
+        @media (min-width: 768px) {
+            padding: 0 var(--s-5);
+        }
     }
 }
 
