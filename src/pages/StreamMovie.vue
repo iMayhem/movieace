@@ -272,6 +272,11 @@ export default defineComponent({
     background: var(--ink-900);
     color: var(--bone-50);
 
+    // Hide scroll car on all watch/stream pages
+    & ~ :global(.scroll-car-container) {
+        display: none !important;
+    }
+
     @media (max-width: 1023px) {
         height: auto;
         min-height: 100dvh;

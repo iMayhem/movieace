@@ -559,6 +559,11 @@ export default defineComponent({
     overflow-y: scroll;
     scroll-snap-type: y proximity;
 
+    // Hide scroll car on all watch/stream pages
+    & ~ :global(.scroll-car-container) {
+        display: none !important;
+    }
+
     @media (max-width: 1023px) {
         height: auto;
         min-height: 100dvh;
