@@ -64,7 +64,7 @@
                     <p class="eyebrow">Projector Fault</p>
                     <h3>Unable to strike direct stream.</h3>
                     <p class="stream-frame__error-message">{{ resolveError }}</p>
-                    <button type="button" class="stream-frame__retry" @click="resolveStream">Retry</button>
+                    <button type="button" class="stream-frame__retry" @click="() => resolveStream()">Retry</button>
                 </div>
             </div>
         </div>
