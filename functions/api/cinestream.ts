@@ -174,6 +174,44 @@ export async function onRequest(context) {
   const { request } = context;
   const url = new URL(request.url);
 
+  // ============================================
+  // WARMUP ENDPOINT - Keep function warm
+  // ============================================
+  if (url.searchParams.get('warmup') === 'true') {
+    return new Response('OK - Function is warm', { 
+      status: 200,
+      headers: {
+        'content-type': 'text/plain',
+        'cache-control': 'no-cache'
+      }
+    });
+  }
+
+  // ============================================
+  // CACHE LAYER - Check cache first
+  // ============================================
+  const cacheKey = new Request(url.toString(), {
+    method: 'GET',
+    headers: request.headers
+  });
+  
+  const cache = caches.default;
+  
+  // Try to get from cache
+  let cachedResponse = await cache.match(cacheKey);
+  if (cachedResponse) {
+    console.log('[CineStream Cache] HIT - Serving from cache');
+    // Add header to indicate cache hit
+    const headers = new Headers(cachedResponse.headers);
+    headers.set('X-Cache', 'HIT');
+    return new Response(cachedResponse.body, {
+      status: cachedResponse.status,
+      headers: headers
+    });
+  }
+  
+  console.log('[CineStream Cache] MISS - Fetching fresh data');
+
   // Unified HLS Playlist and Subtitle Proxy Tunneling
   const proxyUrl = url.searchParams.get('proxyUrl');
   if (proxyUrl) {
@@ -367,26 +405,41 @@ export async function onRequest(context) {
   const { options, captions } = buildResponse(allOptions, allCaptions);
 
   if (options.length === 0) {
+    // Don't cache errors
     return new Response(JSON.stringify({ error: 'No streamable direct links found for this item.' }), {
       status: 404,
       headers: {
         'content-type': 'application/json',
-        'access-control-allow-origin': '*'
+        'access-control-allow-origin': '*',
+        'cache-control': 'no-cache'
       }
     });
   }
 
   const defaultStream = options[0];
 
-  return new Response(JSON.stringify({
+  const responseData = {
     stream: defaultStream,
     options: options,
     captions: captions
-  }), {
+  };
+
+  // Create response with aggressive caching (2 days)
+  const response = new Response(JSON.stringify(responseData), {
     headers: {
       'content-type': 'application/json',
       'access-control-allow-origin': '*',
-      'cache-control': 'public, max-age=1800' // Cache for 30 minutes
+      'X-Cache': 'MISS',
+      // Cache for 2 days (172800 seconds)
+      'cache-control': 'public, max-age=172800, s-maxage=172800, stale-while-revalidate=86400',
+      'cdn-cache-control': 'max-age=172800',
+      'cloudflare-cdn-cache-control': 'max-age=172800'
     }
   });
+
+  // Store in Cloudflare cache
+  context.waitUntil(cache.put(cacheKey, response.clone()));
+  console.log('[CineStream Cache] Stored in cache for 2 days');
+
+  return response;
 }
