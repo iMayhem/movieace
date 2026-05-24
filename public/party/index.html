@@ -2245,6 +2245,14 @@
                 max-height: 45dvh !important;
             }
 
+            /* Video player stage maintains its 16:9 aspect ratio and prevents collapsing */
+            body.room-view-active .player-container .player-stage {
+                aspect-ratio: 16 / 9 !important;
+                width: 100% !important;
+                height: auto !important;
+                max-height: none !important;
+            }
+
             /* Sidebar expands to fill the entire remaining vertical space */
             body.room-view-active .sidebar {
                 flex: 1 1 auto !important;
