@@ -446,7 +446,7 @@ export default defineComponent({
                 theme: '#E50914', // Premium Netflix Red theme
                 quality: finalQualityList,
                 customType: {
-                    m3u8: function (video, url, art: any) {
+                    m3u8: function (video: HTMLVideoElement, url: string, art: any) {
                         if (Hls.isSupported()) {
                             if (art.hls) art.hls.destroy();
                             const hls = new Hls();
