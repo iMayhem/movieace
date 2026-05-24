@@ -587,12 +587,6 @@ export default defineComponent({
     display: flex;
     flex-direction: column;
 
-    // Hide scroll car on all watch/stream pages
-    & ~ :global(.scroll-car-container) {
-        display: none !important;
-    }
-}
-
     &__chrome {
         background: rgba(10, 10, 12, 0.85);
         backdrop-filter: blur(16px);
